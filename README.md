@@ -17,4 +17,6 @@ Alternatively, can combine all of the above into one command: `idf.py flash moni
 
 ## Project Layout
 
-* main/ -> main source code
+* main/capstone.c -> Main app code, calls all other components 
+* components/ -> Directory containing all project components; each has its own CMakeLists.txt file
+* components/pressure_sensor/ -> Pressure sensor related code; setup of sensor, ADC reading, etc. 
