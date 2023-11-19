@@ -1,7 +1,11 @@
-#include <stdio.h>
 #include "pressure_sensor.h"
+#include "esp_adc/adc_continuous.h"
+#include <stdio.h>
 
-void pressure_hello(void)
-{
-  printf("Hello from pressure\n");
-}
+// setup the continuous adc for pressure reading
+void setup_ps_adc() {}
+
+// take pressure sensor readings
+void read_ps_adc(void *pvParameters) {}
+
+void cleanup_ps_adc() {}

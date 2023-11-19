@@ -1,3 +1,6 @@
+# clang-check output
+warnings.txt
+
 # build and cache directories
 build/
 .cache/
