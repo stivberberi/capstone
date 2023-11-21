@@ -12,6 +12,7 @@
 #include "portmacro.h"
 
 const static char *TAG = "Pressure Sensor"; // used as the tag for ESP_LOG's
+const static double PRESSURE_SLOPE = (double)(7.0 / 125.0);
 
 /*
  * Sets up the ADC for the pressure sensor.
@@ -72,8 +73,18 @@ void read_ps_adc(void *ps_args) {
       voltage = adc_raw_reading * 2450 / 4095;
       ESP_LOGI(TAG, "Uncalibrated voltage: %d voltage", voltage);
     }
+    ESP_LOGI(TAG, "Converted pressure: %lf kPa\n",
+             convert_voltage_to_pressure(voltage));
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
+}
+
+double convert_voltage_to_pressure(int voltage_mv) {
+  // NOTE: probably don't want to be calculating this everytime?
+  // Slope of the line was guessed from Fig. 9 of
+  // https://components.omron.com/kr-en/ds_related_pdf/A282-E1.pdf
+  double pressure = (double)(PRESSURE_SLOPE * voltage_mv - 49);
+  return pressure;
 }
 
 void cleanup_ps_adc(PsHandle_Ptr ps_handles) {
