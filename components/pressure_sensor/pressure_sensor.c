@@ -11,7 +11,7 @@
 #include "hal/adc_types.h"
 #include "portmacro.h"
 
-const static char *TAG = "Pressure Sensor"; // used as the tag for ESP_LOG's
+const static char *TAG = "Pressure_Sensor"; // used as the tag for ESP_LOG's
 const static double PRESSURE_SLOPE = (double)(7.0 / 125.0);
 
 /*
