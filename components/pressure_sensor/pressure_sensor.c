@@ -59,13 +59,13 @@ void read_ps_adc(void *ps_args) {
 
     ESP_ERROR_CHECK(adc_oneshot_read(
         *args->ps_adc_handle, PRESSURE_SENSOR_ADC_CHANNEL, &adc_raw_reading));
-    ESP_LOGI(TAG, "ADC raw reading: %d", adc_raw_reading);
+    // ESP_LOGI(TAG, "ADC raw reading: %d", adc_raw_reading);
     if (args->ps_cali_handle != NULL) {
       // get a voltage reading from the calibration configuration. Otherwise use
       // an estimated conversion.
       ESP_ERROR_CHECK(adc_cali_raw_to_voltage(*args->ps_cali_handle,
                                               adc_raw_reading, &voltage));
-      ESP_LOGI(TAG, "Calibrated voltage: %d mV", voltage);
+      // ESP_LOGI(TAG, "Calibrated voltage: %d mV", voltage);
     } else {
       // Max of 2450 mV from this:
       // https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32/api-reference/peripherals/adc.html
@@ -75,7 +75,7 @@ void read_ps_adc(void *ps_args) {
     }
     ESP_LOGI(TAG, "Converted pressure: %lf kPa\n",
              convert_voltage_to_pressure(voltage));
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 }
 
