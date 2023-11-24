@@ -75,7 +75,7 @@ void read_ps_adc(void *ps_args) {
     }
     ESP_LOGI(TAG, "Converted pressure: %lf kPa\n",
              convert_voltage_to_pressure(voltage));
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
 
