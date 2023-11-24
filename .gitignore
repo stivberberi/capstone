@@ -1,6 +1,9 @@
 # clang-check output
 warnings.txt
 
+# serial plotter env
+serial_plotter_env/
+
 # build and cache directories
 build/
 .cache/
