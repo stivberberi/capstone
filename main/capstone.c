@@ -27,11 +27,6 @@ void app_main(void) {
 
   // test pump code
   setup_pump();
-  ESP_LOGI(TAG, "Starting pump...");
-  gpio_set_level(RELAY_GPIO, 1);
-  vTaskDelay(10000 / portTICK_PERIOD_MS);
-  ESP_LOGI(TAG, "Stopping pump...");
-  gpio_set_level(RELAY_GPIO, 0);
 
   while (1) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
