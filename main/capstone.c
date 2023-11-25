@@ -1,16 +1,13 @@
 #include "FreeRTOSConfig.h"
-#include "driver/gpio.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "portmacro.h"
 #include "pressure_sensor.h"
-#include "pump.h"
-
-const static char *TAG = "Main";
+#include <stdio.h>
 
 void app_main(void) {
   // logs are called with an identifier tag and a message.
-  ESP_LOGI(TAG, "hello, world!\n");
+  ESP_LOGI("Main", "hello, world!\n");
   TaskHandle_t read_ps_handle = NULL;
 
   // ADC and calibration handles for the pressure sensor:
@@ -27,7 +24,7 @@ void app_main(void) {
 
   // test pump code
   setup_pump();
-
+  
   while (1) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }

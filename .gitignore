@@ -3,6 +3,9 @@ warnings.txt
 
 .mypy_cache/
 
+# serial plotter env
+serial_plotter_env/
+
 # build and cache directories
 build/
 .cache/
