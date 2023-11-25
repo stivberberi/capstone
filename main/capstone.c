@@ -22,6 +22,9 @@ void app_main(void) {
               &read_ps_handle);
   configASSERT(read_ps_handle);
 
+  // test pump code
+  setup_pump();
+  
   while (1) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
