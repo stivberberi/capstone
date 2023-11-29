@@ -3,7 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "portmacro.h"
 #include "pressure_sensor.h"
-#include <stdio.h>
+#include "pump.h"
 
 void app_main(void) {
   // logs are called with an identifier tag and a message.
@@ -23,8 +23,13 @@ void app_main(void) {
   configASSERT(read_ps_handle);
 
   // test pump code
-  setup_pump();
-  
+  setup_pump_and_solenoid();
+  start_solenoid();
+  start_pump();
+  vTaskDelay(30000 / portTICK_PERIOD_MS);
+  stop_solenoid();
+  stop_pump();
+
   while (1) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
