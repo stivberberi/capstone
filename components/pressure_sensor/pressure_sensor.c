@@ -29,8 +29,11 @@ void setup_ps_adc(adc_oneshot_unit_handle_t *ps_adc_handle,
       .atten = PRESSURE_SENSOR_ADC_ATTENUATION,
       .bitwidth = ADC_BITWIDTH_DEFAULT // automatically sets highest resolution
   };
+  // setup pressure sensor channel (GPIO 35) and fluid sensor channel (GPIO 36)
   ESP_ERROR_CHECK(adc_oneshot_config_channel(
       *ps_adc_handle, PRESSURE_SENSOR_ADC_CHANNEL, &ps_config));
+  ESP_ERROR_CHECK(adc_oneshot_config_channel(
+      *ps_adc_handle, FLUID_PRESSURE_SENSOR_ADC_CHANNEL, &ps_config));
 
 // Calibrate the ADC
 #if ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
@@ -56,8 +59,9 @@ void read_ps_adc(void *ps_args) {
     int adc_raw_reading;
     int voltage; // millivolt reading
 
-    ESP_ERROR_CHECK(adc_oneshot_read(
-        *args->ps_adc_handle, PRESSURE_SENSOR_ADC_CHANNEL, &adc_raw_reading));
+    ESP_ERROR_CHECK(adc_oneshot_read(*args->ps_adc_handle,
+                                     FLUID_PRESSURE_SENSOR_ADC_CHANNEL,
+                                     &adc_raw_reading));
     // ESP_LOGI(TAG, "ADC raw reading: %d", adc_raw_reading);
     if (args->ps_cali_handle != NULL) {
       // get a voltage reading from the calibration configuration. Otherwise use
@@ -72,9 +76,11 @@ void read_ps_adc(void *ps_args) {
       voltage = adc_raw_reading * 2450 / 4095;
       ESP_LOGI(TAG, "Uncalibrated voltage: %d voltage", voltage);
     }
-    ESP_LOGI(TAG, "Converted pressure: %lf kPa\n",
-             convert_voltage_to_pressure(voltage));
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    // ESP_LOGI(TAG, "Converted pressure: %lf kPa\n",
+    //          convert_voltage_to_pressure(voltage));
+    ESP_LOGI(TAG, "Converted fluid pressure: %lf kPa\n",
+             convert_fluid_voltage_to_pressure(voltage));
+    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
 
@@ -83,7 +89,13 @@ double convert_voltage_to_pressure(int voltage_mv) {
   // voltage_in * Max pressure / (Span Voltage * Gain)
   // Max pressure = 37 kPa, Span voltage = 31.0 mV, Gain ~= 50
   // Also subtract 3.3 from final, to account for ~2.5mV offset * ~50 gain
-  double pressure = voltage_mv * 37.0 / (31 * 50) - 3.389677;
+  double pressure = voltage_mv * 37.0 / (31 * 50) - 3.389677; // kPa
+  return pressure;
+}
+
+double convert_fluid_voltage_to_pressure(int voltage_mv) {
+  // 0.5 - 4.5 V range, 0 - 1200 kPa.
+  double pressure = (double)(voltage_mv) * 1200 / (4500 - 500); // kPa
   return pressure;
 }
 
