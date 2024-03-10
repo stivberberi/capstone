@@ -3,6 +3,9 @@ warnings.txt
 
 .mypy_cache/
 
+# ignore managed components
+managed_components/
+
 # serial plotter env
 serial_plotter_env/
 
