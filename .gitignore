@@ -15,6 +15,9 @@ build/
 sdkconfig
 sdkconfig.old
 
+# vscode
+.vscode/
+
 # Prerequisites
 *.d
 
