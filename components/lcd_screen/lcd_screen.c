@@ -1,51 +1,64 @@
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
+#include "esp_lcd_ili9341.h"
+#include "esp_lcd_panel_io.h"
+#include "esp_lcd_panel_ops.h"
 #include "lcd_screen.h"
 #include "esp_log.h"
 
-const static char *TAG = "LCD Screen";
+const static char *TAG = "lcd_screen";
+
+void example_callback(void *ctx, spi_transaction_t *trans) {
+  // SPI callback function implementation
+  // Add your code here
+  // This is where you can implement your logic for the SPI callback function
+
+  // For example, you can access the received data from the SPI transaction
+  // using the 'trans' parameter and perform some operations on it
+
+  // Here's an example of printing the received data to the console
+  ESP_LOGI(TAG, "Received data: %s", (char*)trans->rx_buffer);
+
+  // You can also access the context pointer 'ctx' if you need to pass any additional data
+
+  // Remember to handle any error conditions and cleanup resources if necessary
+}
+
 
 void setup_lcd(void) {
 
-  ESP_LOGI(TAG, "Initialize SPI bus");
-  const spi_bus_config_t bus_config = {
-      .mosi_io_num = LCD_MOSI,
-      .miso_io_num = LCD_MISO,
-      .sclk_io_num = LCD_CLK,
-      .quadwp_io_num = -1,
-      .quadhd_io_num = -1,
-      .max_transfer_sz = LCD_H_RES * LCD_V_RES * sizeof(uint16_t),
-  };
+    ESP_LOGI(TAG, "Initialize SPI bus");
+    const spi_bus_config_t bus_config = ILI9341_PANEL_BUS_SPI_CONFIG(LCD_CLK, LCD_MOSI,
+                                                                     LCD_H_RES * 80 * sizeof(uint16_t));
+    ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &bus_config, SPI_DMA_CH_AUTO));
 
-  spi_bus_initialize(HSPI_HOST, &bus_config, 1);
-  ESP_LOGI(TAG, "Initialize ILI9341 LCD");
+    ESP_LOGI(TAG, "Install panel IO");
+    esp_lcd_panel_io_handle_t io_handle = NULL;
+    const esp_lcd_panel_io_spi_config_t io_config = ILI9341_PANEL_IO_SPI_CONFIG(LCD_CS, LCD_DC,
+                                                                                example_callback, NULL);
 
-  // Configure ILI9341 LCD
-  const spi_device_interface_config_t dev_config = {
-      .clock_speed_hz = 10 * 1000 * 1000,   // 10 MHz
-      .mode = 0,                            // SPI mode 0
-      .spics_io_num = LCD_CS,                // Chip select pin
-      .queue_size = 1,                       // We want to be able to queue 1 transaction at a time
-  };
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)LCD_HOST, &io_config, &io_handle));
 
-  spi_device_handle_t spi;
-  spi_bus_add_device(HSPI_HOST, &dev_config, &spi);
 
-  // Send initialization commands to the LCD
-  lcd_send_cmd(spi, ILI9341_SWRESET);       // Software reset
-  vTaskDelay(100 / portTICK_PERIOD_MS);     // Delay for 100ms
-  lcd_send_cmd(spi, ILI9341_SLPOUT);        // Sleep out
-  vTaskDelay(100 / portTICK_PERIOD_MS);     // Delay for 100ms
-  lcd_send_cmd(spi, ILI9341_DISPON);        // Display on
-
-  // Set the cursor position
-  lcd_set_cursor(spi, 0, 0);
-
-  // Write "Hello World" to the LCD
-  lcd_write_string(spi, "Hello World");
-
-  // Clean up
-  spi_bus_remove_device(spi);
-  spi_bus_free(HSPI_HOST);
+    ESP_LOGI(TAG, "Install ILI9341 panel driver");
+    esp_lcd_panel_handle_t panel_handle = NULL;
+    const esp_lcd_panel_dev_config_t panel_config = {
+        .reset_gpio_num = -1,      // Set to -1 if not use
+    #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)      // Implemented by LCD command `36h`
+            .color_space = ESP_LCD_COLOR_SPACE_RGB,
+    #else
+            .rgb_endian = LCD_RGB_ENDIAN_RGB,
+    #endif
+            .bits_per_pixel = 16,                           // Implemented by LCD command `3Ah` (16/18)
+            // .vendor_config = &vendor_config,            // Uncomment this line if use custom initialization commands
+        };
+        ESP_ERROR_CHECK(esp_lcd_new_panel_ili9341(io_handle, &panel_config, &panel_handle));
+        ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
+        ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
+        ESP_ERROR_CHECK(esp_lcd_panel_disp_off(panel_handle, false));
+    #else
+        ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
+    #endif
 
 }
