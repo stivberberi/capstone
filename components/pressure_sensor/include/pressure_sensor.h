@@ -4,7 +4,7 @@
 
 #define PRESSURE_SENSOR_ADC_CHANNEL ADC_CHANNEL_7 // GPIO35
 #define PRESSURE_SENSOR_ADC_UNIT ADC_UNIT_1       // GPIO35
-#define PRESSURE_SENSOR_ADC_ATTENUATION ADC_ATTEN_DB_11
+#define PRESSURE_SENSOR_ADC_ATTENUATION ADC_ATTEN_DB_12
 
 // struct to pass args into read_ps_adc
 typedef struct _ps_args_ {

@@ -92,7 +92,8 @@ void cleanup_ps_adc(PsHandle_Ptr ps_handles) {
   ESP_ERROR_CHECK(adc_oneshot_del_unit(*ps_handles->ps_adc_handle));
   if (ps_handles->ps_cali_handle != NULL) {
     ESP_LOGI(TAG, "Cleaning up ps calibration scheme...");
-    ESP_ERROR_CHECK(
-        adc_cali_delete_scheme_line_fitting(*ps_handles->ps_cali_handle));
-  }
+  //   ESP_ERROR_CHECK(
+
+  //       adc_cali_delete_scheme_line_fitting(*ps_handles->ps_cali_handle));
+  // }
 }
