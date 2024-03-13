@@ -3,6 +3,11 @@ warnings.txt
 
 .mypy_cache/
 
+# managed components
+managed_components/
+
+.vscode/
+
 # serial plotter env
 serial_plotter_env/
 

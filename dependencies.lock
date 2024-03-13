@@ -11,11 +11,17 @@ dependencies:
       service_url: https://api.components.espressif.com/
       type: service
     version: 0.5.3
+  espressif/esp_lcd_ili9341:
+    component_hash: c6b96c14fa22ab9b80251812f7dbd7dd1b255ccd68abb0cef97a276df711a4ec
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 2.0.0
   idf:
     component_hash: null
     source:
       type: idf
-    version: 5.2.0
-manifest_hash: 76db6456ec2c8b5151992d04a6d26caf9261364a161271672b69feae784158a9
-target: esp32
+    version: 5.3.0
+manifest_hash: 6e281b24c4d7dbeb2cc2d9145528b6e41f75d45b4c152a57977bca3372f48039
+target: esp32p4
 version: 1.0.0
