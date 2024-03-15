@@ -17,6 +17,8 @@
 #define LCD_BIT_PER_PIXEL (16)
 #define LCD_HOST SPI3_HOST
 
+#define LCD_DRAW_BUFF_HEIGHT (50)
+
 // struct to hold all LCD handles
 typedef struct _lcd_struct {
   esp_lcd_panel_io_handle_t *io_handle;

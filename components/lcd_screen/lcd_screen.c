@@ -3,6 +3,7 @@
 #include "core/lv_obj.h"
 #include "core/lv_obj_style_gen.h"
 #include "esp_err.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
 #include "esp_lvgl_port_disp.h"
@@ -10,6 +11,7 @@
 #include "misc/lv_color.h"
 #include "misc/lv_types.h"
 #include "widgets/label/lv_label.h"
+#include <stdint.h>
 
 const static char *TAG = "lcd_screen";
 
@@ -71,7 +73,7 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
   const lvgl_port_display_cfg_t disp_cfg = {
       .io_handle = *lcd_handles->io_handle,
       .panel_handle = *lcd_handles->panel_handle,
-      .buffer_size = LCD_H_RES * LCD_V_RES,
+      .buffer_size = LCD_H_RES * LCD_DRAW_BUFF_HEIGHT * sizeof(uint16_t),
       .double_buffer = true,
       .hres = LCD_H_RES,
       .vres = LCD_V_RES,
@@ -90,6 +92,8 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
           .swap_bytes = false,
       }};
 
+  ESP_LOGI(TAG, "FREE BUFFER SIZE: %u",
+           heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
   disp_handle = lvgl_port_add_disp(&disp_cfg);
 
   // save to struct
