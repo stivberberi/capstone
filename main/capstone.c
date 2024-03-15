@@ -1,6 +1,7 @@
 #include "FreeRTOSConfig.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "lcd_screen.h"
 #include "portmacro.h"
 #include "pressure_sensor.h"
 #include "pump.h"
@@ -21,6 +22,9 @@ void app_main(void) {
   xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 5,
               &read_ps_handle);
   configASSERT(read_ps_handle);
+
+  // setup LCD screen
+  setup_lcd();
 
   // test pump code
   setup_pump_and_solenoid();
