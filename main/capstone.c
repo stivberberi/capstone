@@ -9,7 +9,6 @@
 void app_main(void) {
   // logs are called with an identifier tag and a message.
   ESP_LOGI("Main", "hello, world!\n");
-  TaskHandle_t read_ps_handle = NULL;
 
   // ADC and calibration handles for the pressure sensor:
   adc_oneshot_unit_handle_t ps_adc_handle;
@@ -19,12 +18,17 @@ void app_main(void) {
       .ps_adc_handle = &ps_adc_handle,
       .ps_cali_handle = &ps_cali_handle,
   };
-  xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 5,
-              &read_ps_handle);
-  configASSERT(read_ps_handle);
+
+  // TaskHandle_t read_ps_handle = NULL;
+  // xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 5,
+  //             &read_ps_handle);
+  // configASSERT(read_ps_handle);
 
   // setup LCD screen
-  setup_lcd();
+  LCDStruct lcd_handles;
+  setup_lcd(&lcd_handles);
+  setup_lvgl_disp(&lcd_handles);
+  print_to_lcd(&lcd_handles, "Hello World!");
 
   // test pump code
   setup_pump_and_solenoid();
