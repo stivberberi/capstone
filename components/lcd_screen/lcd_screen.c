@@ -1,9 +1,9 @@
 #include "lcd_screen.h"
-// #include "driver/spi_master.h"
 #include "core/lv_obj.h"
 #include "core/lv_obj_style_gen.h"
 #include "esp_err.h"
 #include "esp_heap_caps.h"
+#include "esp_lcd_panel_ops.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
 #include "esp_lvgl_port_disp.h"
@@ -11,7 +11,7 @@
 #include "misc/lv_color.h"
 #include "misc/lv_types.h"
 #include "widgets/label/lv_label.h"
-#include <stdint.h>
+#include <stdbool.h>
 
 const static char *TAG = "lcd_screen";
 
@@ -19,7 +19,7 @@ void setup_lcd(LCDStruct_Ptr lcd_handles) {
 
   ESP_LOGI(TAG, "Initialize SPI bus");
   const spi_bus_config_t bus_config = ILI9341_PANEL_BUS_SPI_CONFIG(
-      LCD_CLK, LCD_MOSI, LCD_H_RES * 80 * sizeof(uint16_t));
+      LCD_CLK, LCD_MOSI, LCD_H_RES * LCD_DRAW_BUFF_HEIGHT * sizeof(uint16_t));
   ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &bus_config, SPI_DMA_CH_AUTO));
 
   ESP_LOGI(TAG, "Install panel IO");
@@ -59,6 +59,9 @@ void setup_lcd(LCDStruct_Ptr lcd_handles) {
   ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
 #endif
 
+  // swap orientation
+  esp_lcd_panel_mirror(panel_handle, true, false);
+
   // save handles to struct
   lcd_handles->io_handle = &io_handle;
   lcd_handles->panel_handle = &panel_handle;
@@ -92,7 +95,7 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
           .swap_bytes = false,
       }};
 
-  ESP_LOGI(TAG, "FREE BUFFER SIZE: %u",
+  ESP_LOGI(TAG, "FREE BUFFER SIZE: %zul",
            heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
   disp_handle = lvgl_port_add_disp(&disp_cfg);
 
@@ -117,7 +120,7 @@ int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text) {
 
   // in conjuction with lvgl_port_lock
   lvgl_port_unlock();
-  return -1;
+  return 0;
 }
 
 void cleanup_lcd(LCDStruct_Ptr lcd_handles) {

@@ -19,10 +19,10 @@ void app_main(void) {
       .ps_cali_handle = &ps_cali_handle,
   };
 
-  // TaskHandle_t read_ps_handle = NULL;
-  // xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 5,
-  //             &read_ps_handle);
-  // configASSERT(read_ps_handle);
+  TaskHandle_t read_ps_handle = NULL;
+  xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 5,
+              &read_ps_handle);
+  configASSERT(read_ps_handle);
 
   // setup LCD screen
   LCDStruct lcd_handles;
