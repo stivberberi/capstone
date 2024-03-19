@@ -1,5 +1,6 @@
 #include "lcd_screen.h"
 #include "core/lv_obj.h"
+#include "core/lv_obj_style.h"
 #include "core/lv_obj_style_gen.h"
 #include "esp_err.h"
 #include "esp_heap_caps.h"
@@ -9,14 +10,13 @@
 #include "esp_lvgl_port_disp.h"
 #include "lv_api_map.h"
 #include "misc/lv_color.h"
+#include "misc/lv_style.h"
 #include "misc/lv_types.h"
 #include "widgets/label/lv_label.h"
-#include <stdbool.h>
 
 const static char *TAG = "lcd_screen";
 
 void setup_lcd(LCDStruct_Ptr lcd_handles) {
-
   ESP_LOGI(TAG, "Initialize SPI bus");
   const spi_bus_config_t bus_config = ILI9341_PANEL_BUS_SPI_CONFIG(
       LCD_CLK, LCD_MOSI, LCD_H_RES * LCD_DRAW_BUFF_HEIGHT * sizeof(uint16_t));
@@ -112,10 +112,14 @@ int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text) {
   lv_obj_t *screen = lv_disp_get_scr_act(lcd_handles->disp_handle);
 
   // hello world lvgl example
+  static lv_style_t style_label;
+  lv_style_init(&style_label);
+  lv_style_set_text_font(&style_label, &lv_font_montserrat_20);
   lv_obj_set_style_bg_color(screen, lv_color_hex(0x003a57), LV_PART_MAIN);
   lv_obj_t *label = lv_label_create(screen);
   lv_label_set_text(label, text);
   lv_obj_set_style_text_color(screen, lv_color_hex(0xffffff), LV_PART_MAIN);
+  lv_obj_add_style(label, &style_label, LV_PART_MAIN);
   lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 
   // in conjuction with lvgl_port_lock

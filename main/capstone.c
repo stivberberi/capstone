@@ -1,3 +1,4 @@
+#include "../components/lcd_screen/include/lv_conf.h"
 #include "FreeRTOSConfig.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
