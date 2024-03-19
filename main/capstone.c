@@ -28,13 +28,13 @@ void app_main(void) {
   LCDStruct lcd_handles;
   setup_lcd(&lcd_handles);
   setup_lvgl_disp(&lcd_handles);
-  print_to_lcd(&lcd_handles, "Hello World!");
+  print_to_lcd(&lcd_handles, "Hi BeReal");
 
   // test pump code
   setup_pump_and_solenoid();
   start_solenoid();
   start_pump();
-  vTaskDelay(30000 / portTICK_PERIOD_MS);
+  vTaskDelay(10000 / portTICK_PERIOD_MS);
   stop_solenoid();
   stop_pump();
 

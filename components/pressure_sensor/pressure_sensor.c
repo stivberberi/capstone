@@ -8,7 +8,6 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "hal/adc_types.h"
-#include "lcd_screen.h"
 #include "portmacro.h"
 
 const static char *TAG = "Pressure_Sensor"; // used as the tag for ESP_LOG's
