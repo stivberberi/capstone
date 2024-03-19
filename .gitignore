@@ -14,7 +14,6 @@ serial_plotter_env/
 # build and cache directories
 build/
 .cache/
-sdkconfig
 sdkconfig.old
 
 # Prerequisites
