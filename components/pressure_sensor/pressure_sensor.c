@@ -7,7 +7,6 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "hal/adc_types.h"
 #include "portmacro.h"
 
@@ -70,11 +69,13 @@ void read_ps_adc(void *ps_args) {
       // https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32/api-reference/peripherals/adc.html
       // Definitely might be wrong / needs updating / testing however.
       voltage = adc_raw_reading * 2450 / 4095;
-      ESP_LOGI(TAG, "Uncalibrated voltage: %d voltage", voltage);
+      ESP_LOGD(TAG, "Uncalibrated voltage: %d voltage", voltage);
     }
-    ESP_LOGI(TAG, "Converted pressure: %lf kPa\n",
-             convert_voltage_to_pressure(voltage));
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    double converted_voltage = convert_voltage_to_pressure(voltage);
+    ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_voltage);
+
+    // run once every 1000 ms.
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
 
