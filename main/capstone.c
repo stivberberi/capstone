@@ -7,17 +7,24 @@
 #include "pressure_sensor.h"
 #include "pump.h"
 
+static char *TAG = "Main";
+
 void app_main(void) {
   // logs are called with an identifier tag and a message.
-  ESP_LOGI("Main", "hello, world!\n");
+  ESP_LOGI(TAG, "hello, world!\n");
 
   // ADC and calibration handles for the pressure sensor:
   adc_oneshot_unit_handle_t ps_adc_handle;
   adc_cali_handle_t ps_cali_handle;
   setup_ps_adc(&ps_adc_handle, &ps_cali_handle);
+
+  // create pressure sensor single data queue.
+  QueueHandle_t ps_queue = xQueueCreate(1, sizeof(double));
+  configASSERT(ps_queue == 0);
   PsHandle ps_task_args = {
       .ps_adc_handle = &ps_adc_handle,
       .ps_cali_handle = &ps_cali_handle,
+      .ps_queue = &ps_queue,
   };
 
   TaskHandle_t read_ps_handle = NULL;
@@ -31,15 +38,17 @@ void app_main(void) {
   setup_lvgl_disp(&lcd_handles);
   print_to_lcd(&lcd_handles, "Hi BeReal");
 
-  // test pump code
+  // setup solenoid and air pump
   setup_pump_and_solenoid();
-  start_solenoid();
-  start_pump();
-  vTaskDelay(10000 / portTICK_PERIOD_MS);
-  stop_solenoid();
-  stop_pump();
+  double ps_data;
 
   while (1) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+    if (xQueueReceive(ps_queue, &ps_data, 100)) {
+      // received data
+      print_to_lcd(&lcd_handles, "Pressure: %lf kPa", ps_data);
+      ESP_LOGD(TAG, "Received %lf as ps_data", ps_data);
+    }
   }
 }
