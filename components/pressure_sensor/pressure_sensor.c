@@ -51,17 +51,17 @@ void setup_ps_adc(adc_oneshot_unit_handle_t *ps_adc_handle,
 // take pressure sensor readings; meant to be run as RTOS task
 void read_ps_adc(void *ps_args) {
   for (;;) {
-    PsArgs args = *(PsArgs)ps_args;
+    PsHandle_Ptr args = (PsHandle_Ptr)ps_args;
     int adc_raw_reading;
     int voltage; // millivolt reading
 
     ESP_ERROR_CHECK(adc_oneshot_read(
-        args.ps_adc_handle, PRESSURE_SENSOR_ADC_CHANNEL, &adc_raw_reading));
+        *args->ps_adc_handle, PRESSURE_SENSOR_ADC_CHANNEL, &adc_raw_reading));
     // ESP_LOGI(TAG, "ADC raw reading: %d", adc_raw_reading);
-    if (args.ps_cali_handle != NULL) {
+    if (args->ps_cali_handle != NULL) {
       // get a voltage reading from the calibration configuration. Otherwise use
       // an estimated conversion.
-      ESP_ERROR_CHECK(adc_cali_raw_to_voltage(args.ps_cali_handle,
+      ESP_ERROR_CHECK(adc_cali_raw_to_voltage(*args->ps_cali_handle,
                                               adc_raw_reading, &voltage));
       // ESP_LOGI(TAG, "Calibrated voltage: %d mV", voltage);
     } else {
@@ -71,9 +71,11 @@ void read_ps_adc(void *ps_args) {
       voltage = adc_raw_reading * 2450 / 4095;
       ESP_LOGD(TAG, "Uncalibrated voltage: %d voltage", voltage);
     }
-    // ESP_LOGI(TAG, "Converted pressure: %lf kPa\n",
-    // convert_voltage_to_pressure(voltage));
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    double converted_voltage = convert_voltage_to_pressure(voltage);
+    ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_voltage);
+
+    // run once every 1000 ms.
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
 
