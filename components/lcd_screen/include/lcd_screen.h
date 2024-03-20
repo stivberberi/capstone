@@ -34,4 +34,5 @@ void setup_lcd(LCDStruct_Ptr);
 void setup_lvgl_disp(LCDStruct_Ptr);
 
 // Prints text to center of screen
-int print_to_lcd(LCDStruct_Ptr, char *);
+int print_to_lcd(LCDStruct_Ptr, char *,
+                 ...); // ... allows for formatted strings

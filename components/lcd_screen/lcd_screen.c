@@ -103,7 +103,7 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
   lcd_handles->disp_handle = disp_handle;
 }
 
-int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text) {
+int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text, ...) {
   // according to esp_lvgl_port we need this before and after any screen
   // operations
   lvgl_port_lock(0);

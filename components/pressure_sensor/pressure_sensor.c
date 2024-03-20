@@ -71,8 +71,11 @@ void read_ps_adc(void *ps_args) {
       voltage = adc_raw_reading * 2450 / 4095;
       ESP_LOGD(TAG, "Uncalibrated voltage: %d voltage", voltage);
     }
-    double converted_voltage = convert_voltage_to_pressure(voltage);
-    ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_voltage);
+    double converted_pressure = convert_voltage_to_pressure(voltage);
+    ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
+
+    // pass converted pressure
+    xQueueOverwrite(args->ps_queue, converted_pressure);
 
     // run once every 1000 ms.
     vTaskDelay(1000 / portTICK_PERIOD_MS);
