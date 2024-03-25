@@ -6,8 +6,12 @@
 #include "portmacro.h"
 #include "pressure_sensor.h"
 #include "pump.h"
+#include <stdbool.h>
+#include <stdio.h>
 
 static char *TAG = "Main";
+
+#define TARGET_PRESSURE 30.0
 
 void app_main(void) {
   // logs are called with an identifier tag and a message.
@@ -20,7 +24,7 @@ void app_main(void) {
 
   // create pressure sensor single data queue.
   QueueHandle_t ps_queue = xQueueCreate(1, sizeof(double));
-  configASSERT(ps_queue == 0);
+  configASSERT(ps_queue != 0);
   PsHandle ps_task_args = {
       .ps_adc_handle = &ps_adc_handle,
       .ps_cali_handle = &ps_cali_handle,
@@ -36,19 +40,33 @@ void app_main(void) {
   LCDStruct lcd_handles;
   setup_lcd(&lcd_handles);
   setup_lvgl_disp(&lcd_handles);
-  print_to_lcd(&lcd_handles, "Hi BeReal");
+  print_to_lcd(&lcd_handles, "Group 16 Capstone");
 
   // setup solenoid and air pump
   setup_pump_and_solenoid();
   double ps_data;
 
-  while (1) {
+  bool run_demo = true;
+  start_pump();
+  start_solenoid();
+  while (true) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     if (xQueueReceive(ps_queue, &ps_data, 100)) {
       // received data
-      print_to_lcd(&lcd_handles, "Pressure: %lf kPa", ps_data);
+      char text[20];
+      sprintf(text, "Pressure: %.1lf kPa", ps_data);
+      print_to_lcd(&lcd_handles, text);
       ESP_LOGD(TAG, "Received %lf as ps_data", ps_data);
+    }
+    if (run_demo) {
+      if (ps_data < TARGET_PRESSURE) {
+        continue;
+      } else {
+        ESP_LOGI(TAG, "Reached target pressure");
+        stop_pump();
+        run_demo = false;
+      }
     }
   }
 }

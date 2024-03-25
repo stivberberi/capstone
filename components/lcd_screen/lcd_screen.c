@@ -2,13 +2,13 @@
 #include "core/lv_obj.h"
 #include "core/lv_obj_style.h"
 #include "core/lv_obj_style_gen.h"
+#include "core/lv_obj_tree.h"
 #include "esp_err.h"
 #include "esp_heap_caps.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
 #include "esp_lvgl_port_disp.h"
-#include "lv_api_map.h"
 #include "misc/lv_color.h"
 #include "misc/lv_style.h"
 #include "misc/lv_types.h"
@@ -103,7 +103,7 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
   lcd_handles->disp_handle = disp_handle;
 }
 
-int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text, ...) {
+int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text) {
   // according to esp_lvgl_port we need this before and after any screen
   // operations
   lvgl_port_lock(0);
@@ -113,6 +113,7 @@ int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text, ...) {
 
   // hello world lvgl example
   static lv_style_t style_label;
+  lv_obj_clean(screen);
   lv_style_init(&style_label);
   lv_style_set_text_font(&style_label, &lv_font_montserrat_20);
   lv_obj_set_style_bg_color(screen, lv_color_hex(0x003a57), LV_PART_MAIN);
