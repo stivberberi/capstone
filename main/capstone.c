@@ -1,13 +1,19 @@
 #include "../components/lcd_screen/include/lv_conf.h"
 #include "FreeRTOSConfig.h"
+#include "custom_button.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "iot_button.h"
 #include "lcd_screen.h"
 #include "portmacro.h"
 #include "pressure_sensor.h"
 #include "pump.h"
 #include <stdbool.h>
 #include <stdio.h>
+
+static void button_single_click_cb(void *arg, void *usr_data) {
+  ESP_LOGI("Sarahs button", "BUTTON_SINGLE_CLICK");
+}
 
 static char *TAG = "Main";
 
@@ -16,6 +22,15 @@ static char *TAG = "Main";
 void app_main(void) {
   // logs are called with an identifier tag and a message.
   ESP_LOGI(TAG, "hello, world!\n");
+
+  // button set up
+  button_handle_t button_1_handle = setup_button(26);
+  button_handle_t button_2_handle = setup_button(30);
+
+  iot_button_regiscter_cb(button_1_handle, BUTTON_SINGLE_CLICK,
+                          button_single_click_cb, NULL);
+  iot_button_regiscter_cb(button_2_handle, BUTTON_SINGLE_CLICK,
+                          button_single_click_cb, NULL);
 
   // ADC and calibration handles for the pressure sensor:
   adc_oneshot_unit_handle_t ps_adc_handle;
