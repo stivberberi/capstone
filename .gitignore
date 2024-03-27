@@ -3,8 +3,10 @@ warnings.txt
 
 .mypy_cache/
 
-# ignore managed components
+# managed components
 managed_components/
+
+.vscode/
 
 # serial plotter env
 serial_plotter_env/
@@ -12,7 +14,6 @@ serial_plotter_env/
 # build and cache directories
 build/
 .cache/
-sdkconfig
 sdkconfig.old
 
 # vscode

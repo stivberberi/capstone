@@ -13,6 +13,9 @@ clock-speed, etc.):
 - idf.py set-target esp32
 - idf.py menuconfig -> optional if you want to use defualt configs
 
+Note: using ESP-IDF v5.2.1, where ADC_ATTEN_DB_12 has been defined in place of
+ADC_ATTEN_DB_11.
+
 ### Flashing
 
 1. `idf.py build`
