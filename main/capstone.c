@@ -14,11 +14,18 @@ static char *TAG = "Main";
 
 #define TARGET_PRESSURE 30.0
 
+// Self-Regulating Tourniquet Modes
+typedef struct _mode {
+  enum { ON, OFF } power_status;
+  enum {}
+} TourniquetMode;
+
 static void button_single_click_cb(void *arg, void *usr_data) {
   ESP_LOGI("Sarahs button", "BUTTON_SINGLE_CLICK");
 }
 
 void app_main(void) {
+
   // logs are called with an identifier tag and a message.
   ESP_LOGI(TAG, "Welcome to group 16's capstone!");
 
@@ -56,13 +63,13 @@ void app_main(void) {
   setup_lvgl_disp(&lcd_handles);
   print_to_lcd(&lcd_handles, "Group 16 Capstone");
 
-  // **************************************************************************
-  // ------------------------END-SETUP-----------------------------------------
-  // **************************************************************************
-
   // setup solenoid and air pump
   setup_pump_and_solenoid();
   double ps_data;
+
+  // **************************************************************************
+  // ------------------------END-SETUP-----------------------------------------
+  // **************************************************************************
 
   bool run_demo = true;
   start_pump();
