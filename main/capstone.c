@@ -1,4 +1,3 @@
-#include "../components/lcd_screen/include/lv_conf.h"
 #include "FreeRTOSConfig.h"
 #include "custom_button.h"
 #include "esp_log.h"
@@ -11,26 +10,26 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-static void button_single_click_cb(void *arg, void *usr_data) {
-  ESP_LOGI("Sarahs button", "BUTTON_SINGLE_CLICK");
-}
-
 static char *TAG = "Main";
 
 #define TARGET_PRESSURE 30.0
 
+static void button_single_click_cb(void *arg, void *usr_data) {
+  ESP_LOGI("Sarahs button", "BUTTON_SINGLE_CLICK");
+}
+
 void app_main(void) {
   // logs are called with an identifier tag and a message.
-  ESP_LOGI(TAG, "hello, world!\n");
+  ESP_LOGI(TAG, "Welcome to group 16's capstone!");
+
+  // **************************************************************************
+  // ----------------------------SETUP-----------------------------------------
+  // **************************************************************************
 
   // button set up
-  button_handle_t button_1_handle = setup_button(26);
-  button_handle_t button_2_handle = setup_button(30);
-
-  iot_button_regiscter_cb(button_1_handle, BUTTON_SINGLE_CLICK,
-                          button_single_click_cb, NULL);
-  iot_button_regiscter_cb(button_2_handle, BUTTON_SINGLE_CLICK,
-                          button_single_click_cb, NULL);
+  button_handle_t button_2_handle = setup_button(32);
+  iot_button_register_cb(button_2_handle, BUTTON_SINGLE_CLICK,
+                         button_single_click_cb, NULL); // last arg is *usr_data
 
   // ADC and calibration handles for the pressure sensor:
   adc_oneshot_unit_handle_t ps_adc_handle;
@@ -56,6 +55,10 @@ void app_main(void) {
   setup_lcd(&lcd_handles);
   setup_lvgl_disp(&lcd_handles);
   print_to_lcd(&lcd_handles, "Group 16 Capstone");
+
+  // **************************************************************************
+  // ------------------------END-SETUP-----------------------------------------
+  // **************************************************************************
 
   // setup solenoid and air pump
   setup_pump_and_solenoid();
