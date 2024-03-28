@@ -4,7 +4,6 @@
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lvgl_port.h"
-#include "lv_api_map.h"
 
 #define LCD_CLK GPIO_NUM_18
 #define LCD_MOSI GPIO_NUM_23
@@ -34,5 +33,4 @@ void setup_lcd(LCDStruct_Ptr);
 void setup_lvgl_disp(LCDStruct_Ptr);
 
 // Prints text to center of screen
-int print_to_lcd(LCDStruct_Ptr, char *,
-                 ...); // ... allows for formatted strings
+int print_to_lcd(LCDStruct_Ptr, char *);

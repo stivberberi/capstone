@@ -75,7 +75,7 @@ void read_ps_adc(void *ps_args) {
     ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
 
     // pass converted pressure
-    xQueueOverwrite(args->ps_queue, converted_pressure);
+    xQueueOverwrite(*args->ps_queue, &converted_pressure);
 
     // run once every 1000 ms.
     vTaskDelay(1000 / portTICK_PERIOD_MS);
