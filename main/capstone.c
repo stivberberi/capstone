@@ -17,13 +17,25 @@ static char *TAG = "Main";
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
   enum { ON, OFF } power_status;
-  enum { INFLATED, DEFLATED } inflation_status;
+  enum { INFLATED, DEFLATED, INFLATING } inflation_status;
   double set_pressure;
   double current_arterial_pressure;
 } TourniquetConfig;
 
-static void button_single_click_cb(void *arg, void *usr_data) {
-  ESP_LOGI("Sarahs button", "BUTTON_SINGLE_CLICK");
+static void power_button_clicked(void *arg, void *usr_data) {
+  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
+  ESP_LOGI(TAG, "Power button pressed.");
+  tourniquet_configs.inflation_status = INFLATING;
+  start_solenoid();
+  start_pump();
+}
+
+static void solenoid_release_button_clicked(void *arg, void *usr_data) {
+  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
+  ESP_LOGI(TAG, "Solenoid release button pressed.");
+  tourniquet_configs.inflation_status = DEFLATED;
+  stop_solenoid();
+  stop_pump();
 }
 
 void app_main(void) {
@@ -34,11 +46,6 @@ void app_main(void) {
   // **************************************************************************
   // ----------------------------SETUP-----------------------------------------
   // **************************************************************************
-
-  // button set up
-  button_handle_t button_2_handle = setup_button(32);
-  iot_button_register_cb(button_2_handle, BUTTON_SINGLE_CLICK,
-                         button_single_click_cb, NULL); // last arg is *usr_data
 
   // ADC and calibration handles for the pressure sensor:
   adc_oneshot_unit_handle_t ps_adc_handle;
@@ -69,13 +76,28 @@ void app_main(void) {
   setup_pump_and_solenoid();
   double ps_data;
 
+  TourniquetConfig tourniquet_configs = {
+      .power_status = OFF,
+      .set_pressure = 30.0,
+      .inflation_status = DEFLATED,
+      .current_arterial_pressure = 30.0,
+  };
+
+  // button set up
+  button_handle_t power_button_handle = setup_button(37);
+  iot_button_register_cb(power_button_handle, BUTTON_SINGLE_CLICK,
+                         power_button_clicked,
+                         &tourniquet_configs); // last arg is *usr_data
+
+  button_handle_t solenoid_release_button_handle = setup_button(38);
+  iot_button_register_cb(solenoid_release_button_handle, BUTTON_SINGLE_CLICK,
+                         solenoid_release_button_clicked,
+                         &tourniquet_configs); // last arg is *usr_data
+
   // **************************************************************************
   // ------------------------END-SETUP-----------------------------------------
   // **************************************************************************
 
-  bool run_demo = true;
-  start_pump();
-  start_solenoid();
   while (true) {
     vTaskDelay(500 / portTICK_PERIOD_MS);
 
@@ -86,13 +108,14 @@ void app_main(void) {
       print_to_lcd(&lcd_handles, text);
       ESP_LOGD(TAG, "Received %lf as ps_data", ps_data);
     }
-    if (run_demo) {
+
+    if (tourniquet_configs.inflation_status == INFLATING) {
       if (ps_data < TARGET_PRESSURE) {
         continue;
       } else {
         ESP_LOGI(TAG, "Reached target pressure");
+        tourniquet_configs.inflation_status = INFLATED;
         stop_pump();
-        run_demo = false;
       }
     }
   }

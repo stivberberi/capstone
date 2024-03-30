@@ -79,8 +79,8 @@ void read_ps_adc(void *ps_args) {
 
     // run once every 1000 ms.
     vTaskDelay(500 / portTICK_PERIOD_MS);
-    ESP_LOGI(TAG, "Raw voltage: %d", voltage);
-    ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
+    ESP_LOGD(TAG, "Raw voltage: %d", voltage);
+    ESP_LOGD(TAG, "Converted Pressure: %lf", converted_pressure);
   }
 }
 
