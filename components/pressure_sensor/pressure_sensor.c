@@ -78,7 +78,9 @@ void read_ps_adc(void *ps_args) {
     xQueueOverwrite(*args->ps_queue, &converted_pressure);
 
     // run once every 1000 ms.
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+    ESP_LOGI(TAG, "Raw voltage: %d", voltage);
+    ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
   }
 }
 

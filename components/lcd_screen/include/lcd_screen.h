@@ -8,9 +8,9 @@
 #define LCD_CLK GPIO_NUM_18
 #define LCD_MOSI GPIO_NUM_23
 #define LCD_MISO GPIO_NUM_19
-#define LCD_CS GPIO_NUM_5
+#define LCD_CS GPIO_NUM_10
 #define LCD_DC GPIO_NUM_9
-#define LCD_RST GPIO_NUM_10
+// #define LCD_RST GPIO_NUM_10
 
 #define LCD_H_RES (240)
 #define LCD_V_RES (320)

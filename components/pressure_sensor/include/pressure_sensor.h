@@ -3,8 +3,8 @@
 #include "freertos/FreeRTOS.h"
 #include "hal/adc_types.h"
 
-#define PRESSURE_SENSOR_ADC_CHANNEL ADC_CHANNEL_7 // GPIO35
-#define PRESSURE_SENSOR_ADC_UNIT ADC_UNIT_1       // GPIO35
+#define PRESSURE_SENSOR_ADC_CHANNEL ADC_CHANNEL_6 // GPIO34
+#define PRESSURE_SENSOR_ADC_UNIT ADC_UNIT_1       // GPIO34
 #define PRESSURE_SENSOR_ADC_ATTENUATION ADC_ATTEN_DB_12
 
 // struct to pass args into read_ps_adc

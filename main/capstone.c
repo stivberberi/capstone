@@ -12,13 +12,15 @@
 
 static char *TAG = "Main";
 
-#define TARGET_PRESSURE 30.0
+#define TARGET_PRESSURE 20.0
 
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
   enum { ON, OFF } power_status;
-  enum {}
-} TourniquetMode;
+  enum { INFLATED, DEFLATED } inflation_status;
+  double set_pressure;
+  double current_arterial_pressure;
+} TourniquetConfig;
 
 static void button_single_click_cb(void *arg, void *usr_data) {
   ESP_LOGI("Sarahs button", "BUTTON_SINGLE_CLICK");
@@ -75,7 +77,7 @@ void app_main(void) {
   start_pump();
   start_solenoid();
   while (true) {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
 
     if (xQueueReceive(ps_queue, &ps_data, 100)) {
       // received data
