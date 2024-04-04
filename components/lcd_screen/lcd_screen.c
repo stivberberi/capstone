@@ -9,6 +9,7 @@
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
 #include "esp_lvgl_port_disp.h"
+#include "misc/lv_area.h"
 #include "misc/lv_color.h"
 #include "misc/lv_style.h"
 #include "misc/lv_types.h"
@@ -110,20 +111,17 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
   /* Create the first label */
   lv_obj_t *label1 = lv_label_create(screen);
   lv_label_set_text(label1, "Label 1");
-  lv_obj_align(label1, LV_ALIGN_CENTER, 0,
-               -40); /* Align to the center of the screen and move up */
+  lv_obj_align(label1, LV_ALIGN_TOP_MID, 0, 0);
 
   /* Create the second label */
   lv_obj_t *label2 = lv_label_create(screen);
   lv_label_set_text(label2, "Label 2");
-  lv_obj_align(label2, LV_ALIGN_CENTER, 0,
-               0); /* Align to the center of the screen */
+  lv_obj_align(label2, LV_ALIGN_CENTER, 0, 0);
 
   /* Create the third label */
   lv_obj_t *label3 = lv_label_create(screen);
   lv_label_set_text(label3, "Label 3");
-  lv_obj_align(label3, LV_ALIGN_CENTER, 0,
-               40); /* Align to the center of the screen and move down */
+  lv_obj_align(label3, LV_ALIGN_BOTTOM_MID, 0, 0);
   // save to struct
   lcd_handles->cuff_pressure_label = label1;
   lcd_handles->arterial_pressure_label = label2;
