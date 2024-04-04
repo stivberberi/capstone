@@ -15,7 +15,7 @@ static char *TAG = "Main";
 
 #define TARGET_PRESSURE 20.0
 
-ESP_ERROR_CHECK(esp_log_set_level_master(ESP_LOG_DEBUG));
+// ESP_ERROR_CHECK(esp_log_set_level_master(ESP_LOG_DEBUG));
 
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
@@ -26,7 +26,7 @@ typedef struct _mode {
 } TourniquetConfig;
 
 static void power_button_clicked(void *arg, void *usr_data) {
-  TourniquetConfig *tourniquet_configs = *(TourniquetConfig *)usr_data;
+  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
   ESP_LOGI(TAG, "Power button pressed.");
   tourniquet_configs.inflation_status = INFLATING;
   start_solenoid();
@@ -79,7 +79,7 @@ void app_main(void) {
   LCDStruct lcd_handles;
   setup_lcd(&lcd_handles);
   setup_lvgl_disp(&lcd_handles);
-  print_to_lcd(&lcd_handles, "Group 16 Capstone");
+  // print_to_lcd(&lcd_handles, "Group 16 Capstone");
 
   // setup solenoid and air pump
   setup_pump_and_solenoid();
@@ -119,8 +119,10 @@ void app_main(void) {
       // received data
       char text[20];
       sprintf(text, "Pressure: %.1lf kPa", ps_data);
-      print_to_lcd(&lcd_handles, text);
-      ESP_LOGD(TAG, "Received %lf as ps_data", ps_data);
+      update_pressure(lcd_handles.disp_handle, lcd_handles.set_pressure_label,
+                      text);
+      // print_to_lcd(&lcd_handles, text);
+      ESP_LOGI(TAG, "Received %lf as ps_data", ps_data);
     }
 
     if (tourniquet_configs.inflation_status == INFLATING) {

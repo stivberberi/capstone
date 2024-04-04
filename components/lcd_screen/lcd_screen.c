@@ -13,6 +13,7 @@
 #include "misc/lv_style.h"
 #include "misc/lv_types.h"
 #include "widgets/label/lv_label.h"
+#include <stdbool.h>
 
 const static char *TAG = "lcd_screen";
 
@@ -60,7 +61,8 @@ void setup_lcd(LCDStruct_Ptr lcd_handles) {
 #endif
 
   // swap orientation
-  esp_lcd_panel_mirror(panel_handle, true, false);
+  esp_lcd_panel_mirror(panel_handle, true, true);
+  esp_lcd_panel_swap_xy(panel_handle, true);
 
   // save handles to struct
   lcd_handles->io_handle = &io_handle;
@@ -86,7 +88,7 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
          the screen */
       .rotation =
           {
-              .swap_xy = true,
+              .swap_xy = false,
               .mirror_x = false,
               .mirror_y = false,
           },
@@ -104,29 +106,24 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
 
   // setup grid of 3 labels
   lv_obj_t *screen = lv_disp_get_scr_act(disp_handle);
-  lv_obj_t *grid = lv_obj_create(screen);
-  lv_obj_set_size(grid, LV_HOR_RES, LV_VER_RES);
-  lv_obj_set_flex_flow(grid, LV_FLEX_FLOW_ROW_WRAP);
-  lv_obj_set_flex_align(grid, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER,
-                        LV_FLEX_ALIGN_CENTER);
-  lv_obj_set_flex_grow(grid, 1, 1, 1);
 
-  // Place 3 labels
-  lv_obj_t *label1 = lv_label_create(grid);
-  lv_label_set_text(label1, "Cuff Pressure: ");
-  lv_obj_set_style_text_font(label1, &lv_font_montserrat_20, LV_PART_MAIN);
-  lv_obj_set_style_text_color(label1, lv_color_hex(0xffffff), LV_PART_MAIN);
+  /* Create the first label */
+  lv_obj_t *label1 = lv_label_create(screen);
+  lv_label_set_text(label1, "Label 1");
+  lv_obj_align(label1, LV_ALIGN_CENTER, 0,
+               -40); /* Align to the center of the screen and move up */
 
-  lv_obj_t *label2 = lv_label_create(grid);
-  lv_label_set_text(label2, "Arterial Pressure: ");
-  lv_obj_set_style_text_font(label2, &lv_font_montserrat_20, LV_PART_MAIN);
-  lv_obj_set_style_text_color(label2, lv_color_hex(0xffffff), LV_PART_MAIN);
+  /* Create the second label */
+  lv_obj_t *label2 = lv_label_create(screen);
+  lv_label_set_text(label2, "Label 2");
+  lv_obj_align(label2, LV_ALIGN_CENTER, 0,
+               0); /* Align to the center of the screen */
 
-  lv_obj_t *label3 = lv_label_create(grid);
-  lv_label_set_text(label3, "Set Pressure: ");
-  lv_obj_set_style_text_font(label3, &lv_font_montserrat_20, LV_PART_MAIN);
-  lv_obj_set_style_text_color(label3, lv_color_hex(0xffffff), LV_PART_MAIN);
-
+  /* Create the third label */
+  lv_obj_t *label3 = lv_label_create(screen);
+  lv_label_set_text(label3, "Label 3");
+  lv_obj_align(label3, LV_ALIGN_CENTER, 0,
+               40); /* Align to the center of the screen and move down */
   // save to struct
   lcd_handles->cuff_pressure_label = label1;
   lcd_handles->arterial_pressure_label = label2;
@@ -138,13 +135,38 @@ void update_pressure(lv_disp_t *disp_handle, lv_obj_t *label, char *text) {
   // operations
   lvgl_port_lock(0);
 
-  lv_obj_t *screen = lv_disp_get_scr_act(disp_handle);
-  lv_obj_clean(screen);
+  // lv_obj_t *screen = lv_disp_get_scr_act(disp_handle);
+  lv_obj_clean(label);
   lv_label_set_text(label, text);
 
   // in conjuction with lvgl_port_lock
   lvgl_port_unlock();
   return;
+}
+
+int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text) {
+  // according to esp_lvgl_port we need this before and after any screen
+  // operations
+  lvgl_port_lock(0);
+
+  // might want this in LCDStruct_Ptr?
+  lv_obj_t *screen = lv_disp_get_scr_act(lcd_handles->disp_handle);
+
+  // hello world lvgl example
+  lv_obj_clean(screen);
+  static lv_style_t style_label;
+  lv_style_init(&style_label);
+  lv_style_set_text_font(&style_label, &lv_font_montserrat_20);
+  lv_obj_set_style_bg_color(screen, lv_color_hex(0x003a57), LV_PART_MAIN);
+  lv_obj_t *label = lv_label_create(screen);
+  lv_label_set_text(label, text);
+  lv_obj_set_style_text_color(screen, lv_color_hex(0xffffff), LV_PART_MAIN);
+  lv_obj_add_style(label, &style_label, LV_PART_MAIN);
+  lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+
+  // in conjuction with lvgl_port_lock
+  lvgl_port_unlock();
+  return 0;
 }
 
 void cleanup_lcd(LCDStruct_Ptr lcd_handles) {

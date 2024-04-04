@@ -37,3 +37,5 @@ void setup_lvgl_disp(LCDStruct_Ptr);
 
 // Prints text to center of screen
 void update_pressure(lv_disp_t *, lv_obj_t *, char *);
+
+int print_to_lcd(LCDStruct_Ptr, char *);
