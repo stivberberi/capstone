@@ -6,6 +6,8 @@ warnings.txt
 # managed components
 managed_components/
 
+sdkconfig
+
 .vscode/
 
 # serial plotter env
