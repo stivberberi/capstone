@@ -1,5 +1,6 @@
 #include "FreeRTOSConfig.h"
 #include "custom_button.h"
+#include "esp_err.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "iot_button.h"
@@ -14,6 +15,8 @@ static char *TAG = "Main";
 
 #define TARGET_PRESSURE 20.0
 
+ESP_ERROR_CHECK(esp_log_set_level_master(ESP_LOG_DEBUG));
+
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
   enum { ON, OFF } power_status;
@@ -23,7 +26,7 @@ typedef struct _mode {
 } TourniquetConfig;
 
 static void power_button_clicked(void *arg, void *usr_data) {
-  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
+  TourniquetConfig *tourniquet_configs = *(TourniquetConfig *)usr_data;
   ESP_LOGI(TAG, "Power button pressed.");
   tourniquet_configs.inflation_status = INFLATING;
   start_solenoid();
@@ -38,8 +41,14 @@ static void solenoid_release_button_clicked(void *arg, void *usr_data) {
   stop_pump();
 }
 
-void app_main(void) {
+static void stay_at_set_pressure_button(void *arg, void *usr_data) {
+  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
+  ESP_LOGI(TAG, "Stay at pressure button pressed.");
+  tourniquet_configs.inflation_status = INFLATED;
+  stop_pump();
+}
 
+void app_main(void) {
   // logs are called with an identifier tag and a message.
   ESP_LOGI(TAG, "Welcome to group 16's capstone!");
 
@@ -94,6 +103,11 @@ void app_main(void) {
                          solenoid_release_button_clicked,
                          &tourniquet_configs); // last arg is *usr_data
 
+  button_handle_t stay_button_handle = setup_button(5);
+  iot_button_register_cb(stay_button_handle, BUTTON_SINGLE_CLICK,
+                         stay_at_set_pressure_button,
+                         &tourniquet_configs); // last arg is *usr_data
+
   // **************************************************************************
   // ------------------------END-SETUP-----------------------------------------
   // **************************************************************************
@@ -110,7 +124,7 @@ void app_main(void) {
     }
 
     if (tourniquet_configs.inflation_status == INFLATING) {
-      if (ps_data < TARGET_PRESSURE) {
+      if (ps_data < tourniquet_configs.current_arterial_pressure) {
         continue;
       } else {
         ESP_LOGI(TAG, "Reached target pressure");

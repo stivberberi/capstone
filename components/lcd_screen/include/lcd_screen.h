@@ -24,6 +24,9 @@ typedef struct _lcd_struct {
   esp_lcd_panel_io_handle_t *io_handle;
   esp_lcd_panel_handle_t *panel_handle;
   lv_disp_t *disp_handle;
+  lv_obj_t *cuff_pressure_label;
+  lv_obj_t *arterial_pressure_label;
+  lv_obj_t *set_pressure_label;
 } LCDStruct, *LCDStruct_Ptr;
 
 // Sets up ILI9341 LCD Panel
@@ -33,4 +36,4 @@ void setup_lcd(LCDStruct_Ptr);
 void setup_lvgl_disp(LCDStruct_Ptr);
 
 // Prints text to center of screen
-int print_to_lcd(LCDStruct_Ptr, char *);
+void update_pressure(lv_disp_t *, lv_obj_t *, char *);
