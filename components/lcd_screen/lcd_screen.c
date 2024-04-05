@@ -2,17 +2,21 @@
 #include "core/lv_obj.h"
 #include "core/lv_obj_style.h"
 #include "core/lv_obj_style_gen.h"
+#include "core/lv_obj_tree.h"
 #include "esp_err.h"
 #include "esp_heap_caps.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
 #include "esp_lvgl_port_disp.h"
-#include "lv_api_map.h"
+#include "misc/lv_area.h"
 #include "misc/lv_color.h"
+#include "misc/lv_palette.h"
+#include "misc/lv_rb.h"
 #include "misc/lv_style.h"
 #include "misc/lv_types.h"
 #include "widgets/label/lv_label.h"
+#include <stdbool.h>
 
 const static char *TAG = "lcd_screen";
 
@@ -60,7 +64,8 @@ void setup_lcd(LCDStruct_Ptr lcd_handles) {
 #endif
 
   // swap orientation
-  esp_lcd_panel_mirror(panel_handle, true, false);
+  esp_lcd_panel_mirror(panel_handle, true, true);
+  esp_lcd_panel_swap_xy(panel_handle, true);
 
   // save handles to struct
   lcd_handles->io_handle = &io_handle;
@@ -95,15 +100,63 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
           .swap_bytes = false,
       }};
 
-  ESP_LOGI(TAG, "FREE BUFFER SIZE: %zul",
+  ESP_LOGD(TAG, "FREE BUFFER SIZE: %zul",
            heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
   disp_handle = lvgl_port_add_disp(&disp_cfg);
 
   // save to struct
   lcd_handles->disp_handle = disp_handle;
+
+  // setup 3 labels
+  lv_obj_t *screen = lv_disp_get_scr_act(disp_handle);
+  /* Create a style */
+  static lv_style_t style;
+  lv_style_init(&style);
+  /* Set the padding */
+  lv_style_set_pad_all(&style, 5);
+  /* Set the background color */
+  // lv_style_set_bg_color(&style, );
+  /* Set the border width and color */
+  lv_style_set_border_width(&style, 2);
+  lv_style_set_border_color(&style, lv_palette_main(LV_PALETTE_CYAN));
+
+  /* Create the first label */
+  lv_obj_t *label1 = lv_label_create(screen);
+  lv_label_set_text(label1, "Cuff Pressure: ");
+  lv_obj_align(label1, LV_ALIGN_TOP_MID, 0, 0);
+  lv_obj_add_style(label1, &style, LV_PART_MAIN);
+
+  /* Create the second label */
+  lv_obj_t *label2 = lv_label_create(screen);
+  lv_label_set_text(label2, "Label 2");
+  lv_obj_align(label2, LV_ALIGN_CENTER, 0, 0);
+
+  /* Create the third label */
+  lv_obj_t *label3 = lv_label_create(screen);
+  lv_label_set_text(label3, "Label 3");
+  lv_obj_align(label3, LV_ALIGN_BOTTOM_MID, 0, 0);
+
+  // save to struct
+  lcd_handles->cuff_pressure_label = label1;
+  lcd_handles->arterial_pressure_label = label2;
+  lcd_handles->set_pressure_label = label3;
 }
 
-int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text, ...) {
+void update_pressure(lv_disp_t *disp_handle, lv_obj_t *label, char *text) {
+  // according to esp_lvgl_port we need this before and after any screen
+  // operations
+  lvgl_port_lock(0);
+
+  // lv_obj_t *screen = lv_disp_get_scr_act(disp_handle);
+  lv_obj_clean(label);
+  lv_label_set_text(label, text);
+
+  // in conjuction with lvgl_port_lock
+  lvgl_port_unlock();
+  return;
+}
+
+int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text) {
   // according to esp_lvgl_port we need this before and after any screen
   // operations
   lvgl_port_lock(0);
@@ -112,6 +165,7 @@ int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text, ...) {
   lv_obj_t *screen = lv_disp_get_scr_act(lcd_handles->disp_handle);
 
   // hello world lvgl example
+  lv_obj_clean(screen);
   static lv_style_t style_label;
   lv_style_init(&style_label);
   lv_style_set_text_font(&style_label, &lv_font_montserrat_20);
