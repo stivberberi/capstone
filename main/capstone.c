@@ -15,24 +15,41 @@ static char *TAG = "Main";
 
 #define TARGET_PRESSURE 20.0
 
-// ESP_ERROR_CHECK(esp_log_set_level_master(ESP_LOG_DEBUG));
-
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
   enum { ON, OFF } power_status;
   enum { INFLATED, DEFLATED, INFLATING, PAUSED } inflation_status;
-  double set_pressure;
+  double target_pressure;
   double current_arterial_pressure;
 } TourniquetConfig;
 
 static void power_button_clicked(void *arg, void *usr_data) {
   TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
   ESP_LOGD(TAG, "Power button pressed.");
+
+  if (tourniquet_configs->power_status == OFF) {
+    // Turn on LCD
+    turn_on_off_lcd(true);
+    tourniquet_configs->power_status = ON;
+  } else {
+    // acts as e-stop; deflate the cuff now
+    stop_pump();
+    stop_solenoid();
+    tourniquet_configs->inflation_status = DEFLATED;
+  }
 }
 
 static void power_button_long_press(void *arg, void *usr_data) {
   TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
   ESP_LOGD(TAG, "Power button long pressed.");
+
+  if (tourniquet_configs->power_status == ON) {
+    // turn off system
+    turn_on_off_lcd(false);
+    stop_solenoid();
+    stop_pump();
+    tourniquet_configs->power_status = OFF;
+  }
 }
 
 static void start_button_clicked(void *arg, void *usr_data) {
@@ -52,11 +69,18 @@ static void start_button_clicked(void *arg, void *usr_data) {
   }
 }
 
-static void stay_at_set_pressure_button(void *arg, void *usr_data) {
-  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
-  ESP_LOGI(TAG, "Stay at pressure button pressed.");
-  tourniquet_configs.inflation_status = INFLATED;
-  stop_pump();
+void up_button_clicked(void *arg, void *usr_data) {
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+
+  // increase target pressure by set margin
+  tourniquet_configs->target_pressure += 3.0; // kPa
+}
+
+void down_button_clicked(void *arg, void *usr_data) {
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+
+  // decrease target pressure by set margin
+  tourniquet_configs->target_pressure -= 3.0; // kPa
 }
 
 void app_main(void) {
@@ -98,7 +122,7 @@ void app_main(void) {
 
   TourniquetConfig tourniquet_configs = {
       .power_status = OFF,
-      .set_pressure = 30.0,
+      .target_pressure = 30.0,
       .inflation_status = DEFLATED,
       .current_arterial_pressure = 30.0,
   };
@@ -126,6 +150,7 @@ void app_main(void) {
   iot_button_register_cb(down_button_handle, BUTTON_SINGLE_CLICK,
                          down_button_clicked,
                          &tourniquet_configs); // last arg is *usr_data
+
   // **************************************************************************
   // ------------------------END-SETUP-----------------------------------------
   // **************************************************************************
