@@ -128,12 +128,12 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
 
   /* Create the second label */
   lv_obj_t *label2 = lv_label_create(screen);
-  lv_label_set_text(label2, "Label 2");
+  lv_label_set_text(label2, "Arterial Pressure: ");
   lv_obj_align(label2, LV_ALIGN_CENTER, 0, 0);
 
   /* Create the third label */
   lv_obj_t *label3 = lv_label_create(screen);
-  lv_label_set_text(label3, "Label 3");
+  lv_label_set_text(label3, "Target Pressure: ");
   lv_obj_align(label3, LV_ALIGN_BOTTOM_MID, 0, 0);
 
   // save to struct

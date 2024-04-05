@@ -20,25 +20,36 @@ static char *TAG = "Main";
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
   enum { ON, OFF } power_status;
-  enum { INFLATED, DEFLATED, INFLATING } inflation_status;
+  enum { INFLATED, DEFLATED, INFLATING, PAUSED } inflation_status;
   double set_pressure;
   double current_arterial_pressure;
 } TourniquetConfig;
 
 static void power_button_clicked(void *arg, void *usr_data) {
-  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
-  ESP_LOGI(TAG, "Power button pressed.");
-  tourniquet_configs.inflation_status = INFLATING;
-  start_solenoid();
-  start_pump();
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+  ESP_LOGD(TAG, "Power button pressed.");
 }
 
-static void solenoid_release_button_clicked(void *arg, void *usr_data) {
-  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
-  ESP_LOGI(TAG, "Solenoid release button pressed.");
-  tourniquet_configs.inflation_status = DEFLATED;
-  stop_solenoid();
-  stop_pump();
+static void power_button_long_press(void *arg, void *usr_data) {
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+  ESP_LOGD(TAG, "Power button long pressed.");
+}
+
+static void start_button_clicked(void *arg, void *usr_data) {
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+  ESP_LOGD(TAG, "Start button pressed.");
+
+  if (tourniquet_configs->inflation_status == DEFLATED) {
+    // start the feedback loop
+    tourniquet_configs->inflation_status = INFLATING;
+    start_solenoid();
+    start_pump();
+  } else {
+    // Inflated or currently inflating; either way set it to hold pressure
+    tourniquet_configs->inflation_status = PAUSED;
+    stop_pump();
+    start_solenoid(); // in case it was deflating
+  }
 }
 
 static void stay_at_set_pressure_button(void *arg, void *usr_data) {
@@ -97,17 +108,24 @@ void app_main(void) {
   iot_button_register_cb(power_button_handle, BUTTON_SINGLE_CLICK,
                          power_button_clicked,
                          &tourniquet_configs); // last arg is *usr_data
-
-  button_handle_t solenoid_release_button_handle = setup_button(38);
-  iot_button_register_cb(solenoid_release_button_handle, BUTTON_SINGLE_CLICK,
-                         solenoid_release_button_clicked,
+  iot_button_register_cb(power_button_handle, BUTTON_LONG_PRESS_HOLD,
+                         power_button_long_press,
                          &tourniquet_configs); // last arg is *usr_data
 
-  button_handle_t stay_button_handle = setup_button(5);
-  iot_button_register_cb(stay_button_handle, BUTTON_SINGLE_CLICK,
-                         stay_at_set_pressure_button,
+  button_handle_t start_button_handle = setup_button(38);
+  iot_button_register_cb(start_button_handle, BUTTON_SINGLE_CLICK,
+                         start_button_clicked,
                          &tourniquet_configs); // last arg is *usr_data
 
+  button_handle_t up_button_handle = setup_button(5);
+  iot_button_register_cb(up_button_handle, BUTTON_SINGLE_CLICK,
+                         up_button_clicked,
+                         &tourniquet_configs); // last arg is *usr_data
+
+  button_handle_t down_button_handle = setup_button(32);
+  iot_button_register_cb(down_button_handle, BUTTON_SINGLE_CLICK,
+                         down_button_clicked,
+                         &tourniquet_configs); // last arg is *usr_data
   // **************************************************************************
   // ------------------------END-SETUP-----------------------------------------
   // **************************************************************************
