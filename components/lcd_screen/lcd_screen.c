@@ -11,6 +11,8 @@
 #include "esp_lvgl_port_disp.h"
 #include "misc/lv_area.h"
 #include "misc/lv_color.h"
+#include "misc/lv_palette.h"
+#include "misc/lv_rb.h"
 #include "misc/lv_style.h"
 #include "misc/lv_types.h"
 #include "widgets/label/lv_label.h"
@@ -105,13 +107,24 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
   // save to struct
   lcd_handles->disp_handle = disp_handle;
 
-  // setup grid of 3 labels
+  // setup 3 labels
   lv_obj_t *screen = lv_disp_get_scr_act(disp_handle);
+  /* Create a style */
+  static lv_style_t style;
+  lv_style_init(&style);
+  /* Set the padding */
+  lv_style_set_pad_all(&style, 5);
+  /* Set the background color */
+  // lv_style_set_bg_color(&style, );
+  /* Set the border width and color */
+  lv_style_set_border_width(&style, 2);
+  lv_style_set_border_color(&style, lv_palette_main(LV_PALETTE_CYAN));
 
   /* Create the first label */
   lv_obj_t *label1 = lv_label_create(screen);
-  lv_label_set_text(label1, "Label 1");
+  lv_label_set_text(label1, "Cuff Pressure: ");
   lv_obj_align(label1, LV_ALIGN_TOP_MID, 0, 0);
+  lv_obj_add_style(label1, &style, LV_PART_MAIN);
 
   /* Create the second label */
   lv_obj_t *label2 = lv_label_create(screen);
@@ -122,6 +135,7 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
   lv_obj_t *label3 = lv_label_create(screen);
   lv_label_set_text(label3, "Label 3");
   lv_obj_align(label3, LV_ALIGN_BOTTOM_MID, 0, 0);
+
   // save to struct
   lcd_handles->cuff_pressure_label = label1;
   lcd_handles->arterial_pressure_label = label2;
