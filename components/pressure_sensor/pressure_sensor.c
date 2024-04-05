@@ -88,7 +88,7 @@ double convert_voltage_to_pressure(int voltage_mv) {
   // NOTE: probably don't want to be calculating this everytime?
   // voltage_in * Max pressure / (Span Voltage * Gain)
   // Max pressure = 37 kPa, Span voltage = 31.0 mV, Gain ~= 100
-  // Also subtract 3.3 from final, to account for ~2.5mV offset * ~100 gain
+  // Also subtract 1.7 from final, to account for ~2.5mV offset * ~100 gain
   double pressure = voltage_mv * 37.0 / (31 * 100) - 1.694838;
   return pressure;
 }

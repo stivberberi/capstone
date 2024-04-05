@@ -20,6 +20,25 @@
 
 const static char *TAG = "lcd_screen";
 
+void update_pressure(lv_disp_t *disp_handle, lv_obj_t *label, char *text) {
+  // according to esp_lvgl_port we need this before and after any screen
+  // operations
+  lvgl_port_lock(0);
+
+  // lv_obj_t *screen = lv_disp_get_scr_act(disp_handle);
+  lv_obj_clean(label);
+  lv_label_set_text(label, text);
+
+  // in conjuction with lvgl_port_lock
+  lvgl_port_unlock();
+  return;
+}
+
+void turn_on_off_lcd(bool on_off) {
+  // Use backlite PWM to control LCD "on / off"
+  gpio_set_level(LCD_BACKLITE, on_off);
+}
+
 void setup_lcd(LCDStruct_Ptr lcd_handles) {
   ESP_LOGI(TAG, "Initialize SPI bus");
   const spi_bus_config_t bus_config = ILI9341_PANEL_BUS_SPI_CONFIG(
@@ -62,6 +81,17 @@ void setup_lcd(LCDStruct_Ptr lcd_handles) {
   // turn display on
   ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
 #endif
+
+  // setup backlite gpio pin
+  gpio_config_t io_conf;
+  io_conf.intr_type = GPIO_INTR_DISABLE;
+  io_conf.mode = GPIO_MODE_OUTPUT;
+  io_conf.pin_bit_mask = 1ULL << LCD_BACKLITE;
+  io_conf.pull_down_en = 0;
+  io_conf.pull_up_en = 0;
+  gpio_config(&io_conf);
+
+  gpio_set_level(LCD_BACKLITE, 1);
 
   // swap orientation
   esp_lcd_panel_mirror(panel_handle, true, true);
@@ -128,57 +158,18 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
 
   /* Create the second label */
   lv_obj_t *label2 = lv_label_create(screen);
-  lv_label_set_text(label2, "Label 2");
+  lv_label_set_text(label2, "Arterial Pressure: ");
   lv_obj_align(label2, LV_ALIGN_CENTER, 0, 0);
 
   /* Create the third label */
   lv_obj_t *label3 = lv_label_create(screen);
-  lv_label_set_text(label3, "Label 3");
+  lv_label_set_text(label3, "Target Pressure: ");
   lv_obj_align(label3, LV_ALIGN_BOTTOM_MID, 0, 0);
 
   // save to struct
   lcd_handles->cuff_pressure_label = label1;
   lcd_handles->arterial_pressure_label = label2;
   lcd_handles->set_pressure_label = label3;
-}
-
-void update_pressure(lv_disp_t *disp_handle, lv_obj_t *label, char *text) {
-  // according to esp_lvgl_port we need this before and after any screen
-  // operations
-  lvgl_port_lock(0);
-
-  // lv_obj_t *screen = lv_disp_get_scr_act(disp_handle);
-  lv_obj_clean(label);
-  lv_label_set_text(label, text);
-
-  // in conjuction with lvgl_port_lock
-  lvgl_port_unlock();
-  return;
-}
-
-int print_to_lcd(LCDStruct_Ptr lcd_handles, char *text) {
-  // according to esp_lvgl_port we need this before and after any screen
-  // operations
-  lvgl_port_lock(0);
-
-  // might want this in LCDStruct_Ptr?
-  lv_obj_t *screen = lv_disp_get_scr_act(lcd_handles->disp_handle);
-
-  // hello world lvgl example
-  lv_obj_clean(screen);
-  static lv_style_t style_label;
-  lv_style_init(&style_label);
-  lv_style_set_text_font(&style_label, &lv_font_montserrat_20);
-  lv_obj_set_style_bg_color(screen, lv_color_hex(0x003a57), LV_PART_MAIN);
-  lv_obj_t *label = lv_label_create(screen);
-  lv_label_set_text(label, text);
-  lv_obj_set_style_text_color(screen, lv_color_hex(0xffffff), LV_PART_MAIN);
-  lv_obj_add_style(label, &style_label, LV_PART_MAIN);
-  lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-
-  // in conjuction with lvgl_port_lock
-  lvgl_port_unlock();
-  return 0;
 }
 
 void cleanup_lcd(LCDStruct_Ptr lcd_handles) {
