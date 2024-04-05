@@ -61,6 +61,11 @@ void app_main(void) {
   adc_cali_handle_t ps_cali_handle;
   setup_ps_adc(&ps_adc_handle, &ps_cali_handle);
 
+  // ADC and calibration handles for the Fluid sensor:
+  adc_oneshot_unit_handle_t fs_adc_handle;
+  adc_cali_handle_t fs_cali_handle;
+  setup_ps_adc(&fs_adc_handle, &fs_cali_handle);
+
   // create pressure sensor single data queue.
   QueueHandle_t ps_queue = xQueueCreate(1, sizeof(double));
   configASSERT(ps_queue != 0);
@@ -68,6 +73,15 @@ void app_main(void) {
       .ps_adc_handle = &ps_adc_handle,
       .ps_cali_handle = &ps_cali_handle,
       .ps_queue = &ps_queue,
+  };
+
+   // create pressure sensor single data queue.
+  QueueHandle_t fs_queue = xQueueCreate(1, sizeof(double));
+  configASSERT(fs_queue != 0);
+  PsHandle fs_task_args = {
+      .fs_adc_handle = &fs_adc_handle,
+      .fs_cali_handle = &fs_cali_handle,
+      .fs_queue = &fs_queue,
   };
 
   TaskHandle_t read_ps_handle = NULL;
@@ -90,6 +104,9 @@ void app_main(void) {
   // setup solenoid and air pump
   setup_pump_and_solenoid();
   double ps_data;
+  double fs_data; // Fluid Sensor
+
+  
 
   TourniquetConfig tourniquet_configs = {
       .power_status = OFF,
@@ -129,6 +146,16 @@ void app_main(void) {
                       text);
       // print_to_lcd(&lcd_handles, text);
       ESP_LOGI(TAG, "Received %lf as ps_data", ps_data);
+    }
+
+    if (xQueueReceive(fs_queue, &fs_data, 100)) {
+      // received data
+      char text[20];
+      sprintf(text, "Fluid: %.1lf kPa", fs_data);
+      update_pressure(lcd_handles.disp_handle, lcd_handles.set_pressure_label, // This is probably wrong
+                      text);
+      // print_to_lcd(&lcd_handles, text);
+      ESP_LOGI(TAG, "Received %lf as fs_data", fs_data);
     }
 
     if (tourniquet_configs.inflation_status == INFLATING) {

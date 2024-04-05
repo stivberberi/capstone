@@ -90,7 +90,9 @@ void read_fs_adc(void *fs_args) {
   int index_moving = 0;
 
   double pressure_values[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  double pressure_avg = [3] = {0, 0, 0};
+  double pressure_peaks[3] = {0, 0, 0};
+
+  double pressure_avg;
 
   for (;;) {
     FsHandle_Ptr args = (FsHandle_Ptr)fs_args;
@@ -127,11 +129,11 @@ void read_fs_adc(void *fs_args) {
     xQueueOverwrite(*args->fs_queue, &converted_pressure);
 
     // Update Indices
-    int index_read = (index_read + 1)%10;
-    int index_moving = (index_moving + 1)%3;
+    index_read = (index_read + 1)%10;
+    index_moving = (index_moving + 1)%3;
 
     // run once every 1000 ms.
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
     ESP_LOGI(TAG, "Raw voltage: %d", voltage);
     ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
     ESP_LOGI(TAG, "Average Pressure: %lf", pressure_avg);
@@ -174,7 +176,7 @@ double convert_voltage_to_fluid(int voltage) {
   // This is for the fluid pressure sensor; Vout: 0.5-4.5V; Working Pressure Rate Range: 0~1.2Mpa
   // https://www.seeedstudio.com/Water-Pressure-Sensor-G1-4-1-2MPa-p-2887.html
   double offset = 0;
-  double pressure = (4/3)*(voltage / 5 - 0.1) + offset; // P = 4/3 * (Vout/Vcc - 0.1)
+  double pressure = (1.33333333)*(voltage / 5 - 0.1) + offset; // P = 4/3 * (Vout/Vcc - 0.1)
   return pressure; // This may be in MPa, so multiply by 1000 to get kPa
 }
 
