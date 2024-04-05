@@ -11,6 +11,7 @@
 #define LCD_CS GPIO_NUM_10
 #define LCD_DC GPIO_NUM_9
 // #define LCD_RST GPIO_NUM_10
+#define LCD_BACKLITE GPIO_NUM_15
 
 #define LCD_V_RES (240)
 #define LCD_H_RES (320)
@@ -38,4 +39,5 @@ void setup_lvgl_disp(LCDStruct_Ptr);
 // Prints text to center of screen
 void update_pressure(lv_disp_t *, lv_obj_t *, char *);
 
-int print_to_lcd(LCDStruct_Ptr, char *);
+// turns on or off LCD
+void turn_on_off_lcd(bool);
