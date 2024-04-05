@@ -19,7 +19,7 @@ static char *TAG = "Main";
 typedef struct _mode {
   enum { ON, OFF } power_status;
   enum { INFLATED, DEFLATED, INFLATING, PAUSED } inflation_status;
-  double target_pressure;
+  double target_offset; // offset from arterial to target pressure
   double current_arterial_pressure;
 } TourniquetConfig;
 
@@ -73,14 +73,14 @@ void up_button_clicked(void *arg, void *usr_data) {
   TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
 
   // increase target pressure by set margin
-  tourniquet_configs->target_pressure += 3.0; // kPa
+  tourniquet_configs->target_offset += 3.0; // kPa
 }
 
 void down_button_clicked(void *arg, void *usr_data) {
   TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
 
   // decrease target pressure by set margin
-  tourniquet_configs->target_pressure -= 3.0; // kPa
+  tourniquet_configs->target_offset -= 3.0; // kPa
 }
 
 void app_main(void) {
@@ -114,7 +114,6 @@ void app_main(void) {
   LCDStruct lcd_handles;
   setup_lcd(&lcd_handles);
   setup_lvgl_disp(&lcd_handles);
-  // print_to_lcd(&lcd_handles, "Group 16 Capstone");
 
   // setup solenoid and air pump
   setup_pump_and_solenoid();
@@ -122,7 +121,7 @@ void app_main(void) {
 
   TourniquetConfig tourniquet_configs = {
       .power_status = OFF,
-      .target_pressure = 30.0,
+      .target_offset = 3.0,
       .inflation_status = DEFLATED,
       .current_arterial_pressure = 30.0,
   };
@@ -130,26 +129,21 @@ void app_main(void) {
   // button set up
   button_handle_t power_button_handle = setup_button(37);
   iot_button_register_cb(power_button_handle, BUTTON_SINGLE_CLICK,
-                         power_button_clicked,
-                         &tourniquet_configs); // last arg is *usr_data
+                         power_button_clicked, &tourniquet_configs);
   iot_button_register_cb(power_button_handle, BUTTON_LONG_PRESS_HOLD,
-                         power_button_long_press,
-                         &tourniquet_configs); // last arg is *usr_data
+                         power_button_long_press, &tourniquet_configs);
 
   button_handle_t start_button_handle = setup_button(38);
   iot_button_register_cb(start_button_handle, BUTTON_SINGLE_CLICK,
-                         start_button_clicked,
-                         &tourniquet_configs); // last arg is *usr_data
+                         start_button_clicked, &tourniquet_configs);
 
   button_handle_t up_button_handle = setup_button(5);
   iot_button_register_cb(up_button_handle, BUTTON_SINGLE_CLICK,
-                         up_button_clicked,
-                         &tourniquet_configs); // last arg is *usr_data
+                         up_button_clicked, &tourniquet_configs);
 
   button_handle_t down_button_handle = setup_button(32);
   iot_button_register_cb(down_button_handle, BUTTON_SINGLE_CLICK,
-                         down_button_clicked,
-                         &tourniquet_configs); // last arg is *usr_data
+                         down_button_clicked, &tourniquet_configs);
 
   // **************************************************************************
   // ------------------------END-SETUP-----------------------------------------
