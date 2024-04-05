@@ -10,6 +10,8 @@
 #include "hal/adc_types.h"
 #include "portmacro.h"
 
+#define MOVING_AVERAGE_WINDOW_SIZE 10
+
 const static char *TAG = "Pressure_Sensor"; // used as the tag for ESP_LOG's
 
 /*
@@ -64,7 +66,7 @@ double convert_voltage_to_fluid(int voltage) {
   // https://www.seeedstudio.com/Water-Pressure-Sensor-G1-4-1-2MPa-p-2887.html
   double offset = 0;
   // P = 4/3 * (Vout/Vcc - 0.1)
-  double pressure = ((1.33333333) * (voltage / 5.0 - 0.1))*1000 + offset;
+  double pressure = ((1.33333333) * (voltage / 5.0 - 0.1)) + offset;
   return pressure; // This may be in MPa, so multiply by 1000 to get kPa
 }
 
@@ -91,6 +93,11 @@ double findAvg(double arr[], int n) {
 
 // take pressure sensor readings; meant to be run as RTOS task
 void read_ps_adc(void *ps_args) {
+  int index_moving_average = 0;
+
+  double pressure_values[MOVING_AVERAGE_WINDOW_SIZE] = {0};
+  double pressure_avg = 0.0;
+
   for (;;) {
     PsHandle_Ptr args = (PsHandle_Ptr)ps_args;
     int adc_raw_reading;
@@ -115,11 +122,15 @@ void read_ps_adc(void *ps_args) {
     double converted_pressure = convert_voltage_to_pressure(voltage);
     ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
 
-    // pass converted pressure
-    xQueueOverwrite(*args->ps_queue, &converted_pressure);
+    // add to moving average queue
+    pressure_values[index_moving_average] = converted_pressure;
+    pressure_avg = findAvg(pressure_values, MOVING_AVERAGE_WINDOW_SIZE);
 
-    // run once every 1000 ms.
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    // pass converted pressure
+    xQueueOverwrite(*args->ps_queue, &pressure_avg);
+
+    // run once every 100 ms.
+    vTaskDelay(100 / portTICK_PERIOD_MS);
     ESP_LOGD(TAG, "Raw voltage: %d", voltage);
     ESP_LOGD(TAG, "Converted Pressure: %lf", converted_pressure);
   }
@@ -130,8 +141,8 @@ void read_fs_adc(void *fs_args) {
   int index_read = 0;
   int index_moving = 0;
 
-  double pressure_values[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  double pressure_peaks[3] = {0, 0, 0};
+  double pressure_values[10] = {0};
+  double pressure_peaks[3] = {0};
 
   double pressure_avg;
 
@@ -164,7 +175,8 @@ void read_fs_adc(void *fs_args) {
 
     pressure_peaks[index_moving] = findMax(pressure_values, 10);
 
-    pressure_avg = findAvg(pressure_peaks, 3); // This is the result of moving average
+    pressure_avg =
+        findAvg(pressure_peaks, 3); // This is the result of moving average
 
     // pass converted pressure
     xQueueOverwrite(*args->fs_queue, &pressure_avg);
@@ -176,7 +188,7 @@ void read_fs_adc(void *fs_args) {
     // run once every 100 ms.
     vTaskDelay(100 / portTICK_PERIOD_MS);
     ESP_LOGI(TAG, "Raw voltage: %d", voltage);
-    //ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
+    // ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
     ESP_LOGI(TAG, "Average Pressure: %lf", pressure_avg);
   }
 }

@@ -13,39 +13,79 @@
 
 static char *TAG = "Main";
 
-#define TARGET_PRESSURE 20.0
-
-// ESP_ERROR_CHECK(esp_log_set_level_master(ESP_LOG_DEBUG));
+#define TARGET_OFFSET 7.0         // kPa
+#define TARGET_OFFSET_CHANGE 0.26 // kPa
 
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
   enum { ON, OFF } power_status;
-  enum { INFLATED, DEFLATED, INFLATING } inflation_status;
-  double set_pressure;
+  enum { INFLATED, DEFLATED, INFLATING, PAUSED } inflation_status;
+  double target_offset; // offset from arterial to target pressure
   double current_arterial_pressure;
 } TourniquetConfig;
 
 static void power_button_clicked(void *arg, void *usr_data) {
-  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
-  ESP_LOGI(TAG, "Power button pressed.");
-  tourniquet_configs.inflation_status = INFLATING;
-  start_solenoid();
-  start_pump();
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+  ESP_LOGD(TAG, "Power button pressed.");
+
+  if (tourniquet_configs->power_status == OFF) {
+    // Turn on LCD
+    turn_on_off_lcd(true);
+    tourniquet_configs->power_status = ON;
+  } else {
+    // acts as e-stop; deflate the cuff now
+    stop_pump();
+    stop_solenoid();
+    tourniquet_configs->inflation_status = DEFLATED;
+  }
 }
 
-static void solenoid_release_button_clicked(void *arg, void *usr_data) {
-  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
-  ESP_LOGI(TAG, "Solenoid release button pressed.");
-  tourniquet_configs.inflation_status = DEFLATED;
-  stop_solenoid();
-  stop_pump();
+static void power_button_long_press(void *arg, void *usr_data) {
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+  ESP_LOGD(TAG, "Power button long pressed.");
+
+  if (tourniquet_configs->power_status == ON) {
+    // turn off system
+    turn_on_off_lcd(false);
+    stop_solenoid();
+    stop_pump();
+    tourniquet_configs->power_status = OFF;
+  }
 }
 
-static void stay_at_set_pressure_button(void *arg, void *usr_data) {
-  TourniquetConfig tourniquet_configs = *(TourniquetConfig *)usr_data;
-  ESP_LOGI(TAG, "Stay at pressure button pressed.");
-  tourniquet_configs.inflation_status = INFLATED;
-  stop_pump();
+static void start_button_clicked(void *arg, void *usr_data) {
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+  ESP_LOGD(TAG, "Start button pressed.");
+
+  if (tourniquet_configs->inflation_status == DEFLATED) {
+    // start the feedback loop
+    tourniquet_configs->inflation_status = INFLATING;
+    start_solenoid();
+    start_pump();
+  } else {
+    // Inflated or currently inflating; either way set it to hold pressure
+    tourniquet_configs->inflation_status = PAUSED;
+    stop_pump();
+    start_solenoid(); // in case it was deflating
+  }
+}
+
+void up_button_clicked(void *arg, void *usr_data) {
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+
+  // increase target pressure by set margin
+  tourniquet_configs->target_offset += TARGET_OFFSET_CHANGE; // kPa
+}
+
+void down_button_clicked(void *arg, void *usr_data) {
+  TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
+
+  // decrease target pressure by set margin
+  tourniquet_configs->target_offset -= TARGET_OFFSET_CHANGE; // kPa
+}
+
+int convert_kpa_to_mmHg(double kpa_reading) {
+  return (int)(kpa_reading * 7.50062);
 }
 
 void app_main(void) {
@@ -80,13 +120,13 @@ void app_main(void) {
   };
 
   TaskHandle_t read_ps_handle = NULL;
-  xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 1024, &ps_task_args, 5,
+  xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 5,
               &read_ps_handle);
   configASSERT(read_ps_handle);
 
   // Task for Fluid Pressure Sensor
   TaskHandle_t read_fs_handle = NULL;
-  xTaskCreate(read_fs_adc, "Reading Fluid Pressure Sensor", 1024, &fs_task_args,
+  xTaskCreate(read_fs_adc, "Reading Fluid Pressure Sensor", 2048, &fs_task_args,
               5, &read_fs_handle);
   configASSERT(read_fs_handle);
 
@@ -94,7 +134,6 @@ void app_main(void) {
   LCDStruct lcd_handles;
   setup_lcd(&lcd_handles);
   setup_lvgl_disp(&lcd_handles);
-  // print_to_lcd(&lcd_handles, "Group 16 Capstone");
 
   // setup solenoid and air pump
   setup_pump_and_solenoid();
@@ -103,7 +142,7 @@ void app_main(void) {
 
   TourniquetConfig tourniquet_configs = {
       .power_status = OFF,
-      .set_pressure = 30.0,
+      .target_offset = TARGET_OFFSET,
       .inflation_status = DEFLATED,
       .current_arterial_pressure = 30.0,
   };
@@ -111,18 +150,21 @@ void app_main(void) {
   // button set up
   button_handle_t power_button_handle = setup_button(37);
   iot_button_register_cb(power_button_handle, BUTTON_SINGLE_CLICK,
-                         power_button_clicked,
-                         &tourniquet_configs); // last arg is *usr_data
+                         power_button_clicked, &tourniquet_configs);
+  iot_button_register_cb(power_button_handle, BUTTON_LONG_PRESS_HOLD,
+                         power_button_long_press, &tourniquet_configs);
 
-  button_handle_t solenoid_release_button_handle = setup_button(38);
-  iot_button_register_cb(solenoid_release_button_handle, BUTTON_SINGLE_CLICK,
-                         solenoid_release_button_clicked,
-                         &tourniquet_configs); // last arg is *usr_data
+  button_handle_t start_button_handle = setup_button(38);
+  iot_button_register_cb(start_button_handle, BUTTON_SINGLE_CLICK,
+                         start_button_clicked, &tourniquet_configs);
 
-  button_handle_t stay_button_handle = setup_button(5);
-  iot_button_register_cb(stay_button_handle, BUTTON_SINGLE_CLICK,
-                         stay_at_set_pressure_button,
-                         &tourniquet_configs); // last arg is *usr_data
+  button_handle_t up_button_handle = setup_button(5);
+  iot_button_register_cb(up_button_handle, BUTTON_SINGLE_CLICK,
+                         up_button_clicked, &tourniquet_configs);
+
+  button_handle_t down_button_handle = setup_button(32);
+  iot_button_register_cb(down_button_handle, BUTTON_SINGLE_CLICK,
+                         down_button_clicked, &tourniquet_configs);
 
   // **************************************************************************
   // ------------------------END-SETUP-----------------------------------------
@@ -130,12 +172,13 @@ void app_main(void) {
 
   while (true) {
     vTaskDelay(500 / portTICK_PERIOD_MS);
+    char text[44];
+    double target_pressure = 0.0;
 
     if (xQueueReceive(ps_queue, &ps_data, 100)) {
       // received data
-      char text[20];
-      sprintf(text, "Pressure: %.1lf kPa", ps_data);
-      update_pressure(lcd_handles.disp_handle, lcd_handles.set_pressure_label,
+      sprintf(text, "Cuff Pressure: %d mmHg", convert_kpa_to_mmHg(ps_data));
+      update_pressure(lcd_handles.disp_handle, lcd_handles.cuff_pressure_label,
                       text);
       // print_to_lcd(&lcd_handles, text);
       ESP_LOGI(TAG, "Received %lf as ps_data", ps_data);
@@ -143,17 +186,23 @@ void app_main(void) {
 
     if (xQueueReceive(fs_queue, &fs_data, 100)) {
       // received data
-      char text[20];
-      sprintf(text, "Fluid: %.1lf kPa", fs_data);
+      sprintf(text, "Arterial Pressure: %d mmHg", convert_kpa_to_mmHg(fs_data));
       update_pressure(lcd_handles.disp_handle,
-                      lcd_handles.set_pressure_label, // This is probably wrong
-                      text);
+                      lcd_handles.arterial_pressure_label, text);
       // print_to_lcd(&lcd_handles, text);
       ESP_LOGI(TAG, "Received %lf as fs_data", fs_data);
     }
 
+    // print arterial pressure + offset
+    target_pressure = fs_data + tourniquet_configs.target_offset;
+    sprintf(text, "Target Pressure: %d mmHg\nOffset: %d mmHg",
+            convert_kpa_to_mmHg(target_pressure),
+            convert_kpa_to_mmHg(tourniquet_configs.target_offset));
+    update_pressure(lcd_handles.disp_handle, lcd_handles.set_pressure_label,
+                    text);
+
     if (tourniquet_configs.inflation_status == INFLATING) {
-      if (ps_data < tourniquet_configs.current_arterial_pressure) {
+      if (ps_data < target_pressure) {
         continue;
       } else {
         ESP_LOGI(TAG, "Reached target pressure");
