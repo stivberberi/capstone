@@ -84,6 +84,83 @@ void read_ps_adc(void *ps_args) {
   }
 }
 
+// Fluid Pressure Sensor
+void read_fs_adc(void *fs_args) {
+  int index_read = 0;
+  int index_moving = 0;
+
+  double pressure_values[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  double pressure_avg = [3] = {0, 0, 0};
+
+  for (;;) {
+    FsHandle_Ptr args = (FsHandle_Ptr)fs_args;
+    int adc_raw_reading;
+    int voltage; // voltage reading
+
+    ESP_ERROR_CHECK(adc_oneshot_read(
+        *args->fs_adc_handle, PRESSURE_SENSOR_ADC_CHANNEL, &adc_raw_reading));
+    // ESP_LOGI(TAG, "ADC raw reading: %d", adc_raw_reading);
+    if (args->fs_cali_handle != NULL) {
+      // get a voltage reading from the calibration configuration. Otherwise use
+      // an estimated conversion.
+      ESP_ERROR_CHECK(adc_cali_raw_to_voltage(*args->fs_cali_handle,
+                                              adc_raw_reading, &voltage));
+      // ESP_LOGI(TAG, "Calibrated voltage: %d mV", voltage);
+    } else {
+      // Max of 2450 mV from this:
+      // https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32/api-reference/peripherals/adc.html
+      // Definitely might be wrong / needs updating / testing however.
+      voltage = adc_raw_reading * 2450 / 4095;
+      ESP_LOGI(TAG, "Uncalibrated voltage: %d voltage", voltage);
+    }
+    double converted_pressure = convert_voltage_to_fluid(voltage);
+    ESP_LOGI(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
+
+    // Setting up moving average
+    pressure_values[index_read] = converted_pressure;
+
+    pressure_peaks[index_moving] = findMax(pressure_values,10);
+
+    pressure_avg = findAvg(pressure_peaks, 3); // This is the result of moving average
+
+    // pass converted pressure
+    xQueueOverwrite(*args->fs_queue, &converted_pressure);
+
+    // Update Indices
+    int index_read = (index_read + 1)%10;
+    int index_moving = (index_moving + 1)%3;
+
+    // run once every 1000 ms.
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+    ESP_LOGI(TAG, "Raw voltage: %d", voltage);
+    ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
+    ESP_LOGI(TAG, "Average Pressure: %lf", pressure_avg);
+  }
+}
+
+int findMax(double arr[], int n) {
+  int max = arr[0]; // Start with the first element
+  for(int i = 1; i < n; i++) {
+        if(arr[i] > max) {
+            max = arr[i]; // Update max if current element is greater
+        }
+    }
+  return max;
+}
+
+double findAvg(int arr[], int n) {
+  int sum = 0;
+
+  for(int i = 0; i < n; i++) {
+        sum += arr[i];
+    }
+
+  // Calculate average
+    double average = (double)sum / n;
+
+    return average;
+} 
+
 double convert_voltage_to_pressure(int voltage_mv) {
   // NOTE: probably don't want to be calculating this everytime?
   // voltage_in * Max pressure / (Span Voltage * Gain)
@@ -91,6 +168,14 @@ double convert_voltage_to_pressure(int voltage_mv) {
   // Also subtract 3.3 from final, to account for ~2.5mV offset * ~100 gain
   double pressure = voltage_mv * 37.0 / (31 * 100) - 1.694838;
   return pressure;
+}
+
+double convert_voltage_to_fluid(int voltage) {
+  // This is for the fluid pressure sensor; Vout: 0.5-4.5V; Working Pressure Rate Range: 0~1.2Mpa
+  // https://www.seeedstudio.com/Water-Pressure-Sensor-G1-4-1-2MPa-p-2887.html
+  double offset = 0;
+  double pressure = (4/3)*(voltage / 5 - 0.1) + offset; // P = 4/3 * (Vout/Vcc - 0.1)
+  return pressure; // This may be in MPa, so multiply by 1000 to get kPa
 }
 
 void cleanup_ps_adc(PsHandle_Ptr ps_handles) {

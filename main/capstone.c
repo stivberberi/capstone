@@ -75,6 +75,12 @@ void app_main(void) {
               &read_ps_handle);
   configASSERT(read_ps_handle);
 
+  // Task for Fluid Pressure Sensor
+  TaskHandle_t read_fs_handle = NULL;
+  xTaskCreate(read_fs_adc, "Reading Fluid Pressure Sensor", 1024, &fs_task_args, 5,
+              &read_fs_handle);
+  configASSERT(read_fs_handle);
+
   // setup LCD screen
   LCDStruct lcd_handles;
   setup_lcd(&lcd_handles);
