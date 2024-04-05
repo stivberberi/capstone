@@ -49,6 +49,46 @@ void setup_ps_adc(adc_oneshot_unit_handle_t *ps_adc_handle,
 #endif
 }
 
+double convert_voltage_to_pressure(int voltage_mv) {
+  // NOTE: probably don't want to be calculating this everytime?
+  // voltage_in * Max pressure / (Span Voltage * Gain)
+  // Max pressure = 37 kPa, Span voltage = 31.0 mV, Gain ~= 100
+  // Also subtract 3.3 from final, to account for ~2.5mV offset * ~100 gain
+  double pressure = voltage_mv * 37.0 / (31 * 100) - 1.694838;
+  return pressure;
+}
+
+double convert_voltage_to_fluid(int voltage) {
+  // This is for the fluid pressure sensor; Vout: 0.5-4.5V; Working Pressure
+  // Rate Range: 0~1.2Mpa
+  // https://www.seeedstudio.com/Water-Pressure-Sensor-G1-4-1-2MPa-p-2887.html
+  double offset = 0;
+  // P = 4/3 * (Vout/Vcc - 0.1)
+  double pressure = ((1.33333333) * (voltage / 5.0 - 0.1))*1000 + offset;
+  return pressure; // This may be in MPa, so multiply by 1000 to get kPa
+}
+
+int findMax(double arr[], int n) {
+  int max = arr[0]; // Start with the first element
+  for (int i = 1; i < n; i++) {
+    if (arr[i] > max) {
+      max = arr[i]; // Update max if current element is greater
+    }
+  }
+  return max;
+}
+
+double findAvg(double arr[], int n) {
+  double sum = 0;
+
+  for (int i = 0; i < n; i++) {
+    sum += arr[i];
+  }
+
+  // Calculate average
+  return (sum / n);
+}
+
 // take pressure sensor readings; meant to be run as RTOS task
 void read_ps_adc(void *ps_args) {
   for (;;) {
@@ -124,64 +164,21 @@ void read_fs_adc(void *fs_args) {
 
     pressure_peaks[index_moving] = findMax(pressure_values, 10);
 
-    pressure_avg =
-        findAvg(pressure_peaks, 3); // This is the result of moving average
+    pressure_avg = findAvg(pressure_peaks, 3); // This is the result of moving average
 
     // pass converted pressure
-    xQueueOverwrite(*args->fs_queue, &converted_pressure);
+    xQueueOverwrite(*args->fs_queue, &pressure_avg);
 
     // Update Indices
     index_read = (index_read + 1) % 10;
     index_moving = (index_moving + 1) % 3;
 
-    // run once every 1000 ms.
+    // run once every 100 ms.
     vTaskDelay(100 / portTICK_PERIOD_MS);
     ESP_LOGI(TAG, "Raw voltage: %d", voltage);
-    ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
+    //ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
     ESP_LOGI(TAG, "Average Pressure: %lf", pressure_avg);
   }
-}
-
-int findMax(double arr[], int n) {
-  int max = arr[0]; // Start with the first element
-  for (int i = 1; i < n; i++) {
-    if (arr[i] > max) {
-      max = arr[i]; // Update max if current element is greater
-    }
-  }
-  return max;
-}
-
-double findAvg(double arr[], int n) {
-  int sum = 0;
-
-  for (int i = 0; i < n; i++) {
-    sum += arr[i];
-  }
-
-  // Calculate average
-  double average = (double)sum / n;
-
-  return average;
-}
-
-double convert_voltage_to_pressure(int voltage_mv) {
-  // NOTE: probably don't want to be calculating this everytime?
-  // voltage_in * Max pressure / (Span Voltage * Gain)
-  // Max pressure = 37 kPa, Span voltage = 31.0 mV, Gain ~= 100
-  // Also subtract 3.3 from final, to account for ~2.5mV offset * ~100 gain
-  double pressure = voltage_mv * 37.0 / (31 * 100) - 1.694838;
-  return pressure;
-}
-
-double convert_voltage_to_fluid(int voltage) {
-  // This is for the fluid pressure sensor; Vout: 0.5-4.5V; Working Pressure
-  // Rate Range: 0~1.2Mpa
-  // https://www.seeedstudio.com/Water-Pressure-Sensor-G1-4-1-2MPa-p-2887.html
-  double offset = 0;
-  // P = 4/3 * (Vout/Vcc - 0.1)
-  double pressure = (1.33333333) * (voltage / 5.0 - 0.1) + offset;
-  return pressure; // This may be in MPa, so multiply by 1000 to get kPa
 }
 
 void cleanup_ps_adc(PsHandle_Ptr ps_handles) {

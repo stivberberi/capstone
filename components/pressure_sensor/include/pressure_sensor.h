@@ -23,5 +23,6 @@ typedef struct _fs_args_ {
 
 void setup_ps_adc(adc_oneshot_unit_handle_t *, adc_cali_handle_t *);
 void read_ps_adc(void *);
+void read_fs_adc(void *);
 void cleanup_ps_adc(PsHandle_Ptr);
 double convert_voltage_to_pressure(int);
