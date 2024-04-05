@@ -30,7 +30,8 @@ void setup_ps_adc(adc_oneshot_unit_handle_t *ps_adc_handle,
   };
   ESP_ERROR_CHECK(adc_oneshot_config_channel(
       *ps_adc_handle, PRESSURE_SENSOR_ADC_CHANNEL, &ps_config));
-
+  ESP_ERROR_CHECK(adc_oneshot_config_channel(
+      *ps_adc_handle, FLUID_SENSOR_ADC_CHANNEL, &ps_config));
 // Calibrate the ADC
 #if ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
   ESP_LOGI(TAG, "Starting ADC calibration...");
@@ -121,16 +122,17 @@ void read_fs_adc(void *fs_args) {
     // Setting up moving average
     pressure_values[index_read] = converted_pressure;
 
-    pressure_peaks[index_moving] = findMax(pressure_values,10);
+    pressure_peaks[index_moving] = findMax(pressure_values, 10);
 
-    pressure_avg = findAvg(pressure_peaks, 3); // This is the result of moving average
+    pressure_avg =
+        findAvg(pressure_peaks, 3); // This is the result of moving average
 
     // pass converted pressure
     xQueueOverwrite(*args->fs_queue, &converted_pressure);
 
     // Update Indices
-    index_read = (index_read + 1)%10;
-    index_moving = (index_moving + 1)%3;
+    index_read = (index_read + 1) % 10;
+    index_moving = (index_moving + 1) % 3;
 
     // run once every 1000 ms.
     vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -142,26 +144,26 @@ void read_fs_adc(void *fs_args) {
 
 int findMax(double arr[], int n) {
   int max = arr[0]; // Start with the first element
-  for(int i = 1; i < n; i++) {
-        if(arr[i] > max) {
-            max = arr[i]; // Update max if current element is greater
-        }
+  for (int i = 1; i < n; i++) {
+    if (arr[i] > max) {
+      max = arr[i]; // Update max if current element is greater
     }
+  }
   return max;
 }
 
-double findAvg(int arr[], int n) {
+double findAvg(double arr[], int n) {
   int sum = 0;
 
-  for(int i = 0; i < n; i++) {
-        sum += arr[i];
-    }
+  for (int i = 0; i < n; i++) {
+    sum += arr[i];
+  }
 
   // Calculate average
-    double average = (double)sum / n;
+  double average = (double)sum / n;
 
-    return average;
-} 
+  return average;
+}
 
 double convert_voltage_to_pressure(int voltage_mv) {
   // NOTE: probably don't want to be calculating this everytime?
@@ -173,10 +175,12 @@ double convert_voltage_to_pressure(int voltage_mv) {
 }
 
 double convert_voltage_to_fluid(int voltage) {
-  // This is for the fluid pressure sensor; Vout: 0.5-4.5V; Working Pressure Rate Range: 0~1.2Mpa
+  // This is for the fluid pressure sensor; Vout: 0.5-4.5V; Working Pressure
+  // Rate Range: 0~1.2Mpa
   // https://www.seeedstudio.com/Water-Pressure-Sensor-G1-4-1-2MPa-p-2887.html
   double offset = 0;
-  double pressure = (1.33333333)*(voltage / 5 - 0.1) + offset; // P = 4/3 * (Vout/Vcc - 0.1)
+  // P = 4/3 * (Vout/Vcc - 0.1)
+  double pressure = (1.33333333) * (voltage / 5.0 - 0.1) + offset;
   return pressure; // This may be in MPa, so multiply by 1000 to get kPa
 }
 

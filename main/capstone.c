@@ -61,11 +61,6 @@ void app_main(void) {
   adc_cali_handle_t ps_cali_handle;
   setup_ps_adc(&ps_adc_handle, &ps_cali_handle);
 
-  // ADC and calibration handles for the Fluid sensor:
-  adc_oneshot_unit_handle_t fs_adc_handle;
-  adc_cali_handle_t fs_cali_handle;
-  setup_ps_adc(&fs_adc_handle, &fs_cali_handle);
-
   // create pressure sensor single data queue.
   QueueHandle_t ps_queue = xQueueCreate(1, sizeof(double));
   configASSERT(ps_queue != 0);
@@ -75,24 +70,24 @@ void app_main(void) {
       .ps_queue = &ps_queue,
   };
 
-   // create pressure sensor single data queue.
+  // create pressure sensor single data queue.
   QueueHandle_t fs_queue = xQueueCreate(1, sizeof(double));
   configASSERT(fs_queue != 0);
-  PsHandle fs_task_args = {
-      .fs_adc_handle = &fs_adc_handle,
-      .fs_cali_handle = &fs_cali_handle,
+  FsHandle fs_task_args = {
+      .fs_adc_handle = &ps_adc_handle,
+      .fs_cali_handle = &ps_cali_handle,
       .fs_queue = &fs_queue,
   };
 
   TaskHandle_t read_ps_handle = NULL;
-  xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 5,
+  xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 1024, &ps_task_args, 5,
               &read_ps_handle);
   configASSERT(read_ps_handle);
 
   // Task for Fluid Pressure Sensor
   TaskHandle_t read_fs_handle = NULL;
-  xTaskCreate(read_fs_adc, "Reading Fluid Pressure Sensor", 1024, &fs_task_args, 5,
-              &read_fs_handle);
+  xTaskCreate(read_fs_adc, "Reading Fluid Pressure Sensor", 1024, &fs_task_args,
+              5, &read_fs_handle);
   configASSERT(read_fs_handle);
 
   // setup LCD screen
@@ -105,8 +100,6 @@ void app_main(void) {
   setup_pump_and_solenoid();
   double ps_data;
   double fs_data; // Fluid Sensor
-
-  
 
   TourniquetConfig tourniquet_configs = {
       .power_status = OFF,
@@ -152,7 +145,8 @@ void app_main(void) {
       // received data
       char text[20];
       sprintf(text, "Fluid: %.1lf kPa", fs_data);
-      update_pressure(lcd_handles.disp_handle, lcd_handles.set_pressure_label, // This is probably wrong
+      update_pressure(lcd_handles.disp_handle,
+                      lcd_handles.set_pressure_label, // This is probably wrong
                       text);
       // print_to_lcd(&lcd_handles, text);
       ESP_LOGI(TAG, "Received %lf as fs_data", fs_data);

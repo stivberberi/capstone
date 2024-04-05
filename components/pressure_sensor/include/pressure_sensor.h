@@ -3,8 +3,8 @@
 #include "freertos/FreeRTOS.h"
 #include "hal/adc_types.h"
 
-#define PRESSURE_SENSOR_ADC_CHANNEL ADC_CHANNEL_6 // GPIO34 = 6, 
-#define PRESSURE_SENSOR_ADC_CHANNEL ADC_CHANNEL_7 // GPIO35 = 7
+#define PRESSURE_SENSOR_ADC_CHANNEL ADC_CHANNEL_6 // GPIO34 = 6,
+#define FLUID_SENSOR_ADC_CHANNEL ADC_CHANNEL_7    // GPIO35 = 7
 #define PRESSURE_SENSOR_ADC_UNIT ADC_UNIT_1       // GPIO34 & 35
 #define PRESSURE_SENSOR_ADC_ATTENUATION ADC_ATTEN_DB_12
 
@@ -19,7 +19,7 @@ typedef struct _fs_args_ {
   adc_oneshot_unit_handle_t *fs_adc_handle;
   adc_cali_handle_t *fs_cali_handle;
   QueueHandle_t *fs_queue;
-} PsHandle, *FsHandle_Ptr;
+} FsHandle, *FsHandle_Ptr;
 
 void setup_ps_adc(adc_oneshot_unit_handle_t *, adc_cali_handle_t *);
 void read_ps_adc(void *);
