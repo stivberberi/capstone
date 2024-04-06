@@ -1,0 +1,9 @@
+Removed Pin From Net: NetName=PRESSURE_DATA Pin=J1-J2_14
+Removed Pin From Net: NetName=FLUID_DATA Pin=J1-J2_15
+Removed Pin From Net: NetName=NetJ1_J3_8 Pin=SW3-4
+Removed Pin From Net: NetName=NetJ1_J2_9 Pin=SW4-4
+Added Pin To Net: NetName=FLUID_DATA Pin=J1-J2_14
+Added Pin To Net: NetName=PRESSURE_DATA Pin=J1-J2_15
+Added Pin To Net: NetName=NetJ1_J2_9 Pin=SW3-4
+Added Pin To Net: NetName=NetJ1_J3_8 Pin=SW4-4
+Added Member To Class: ClassName=3_PressureSensor Member=Component U4 INA121U
