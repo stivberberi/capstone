@@ -13,7 +13,8 @@
 
 static char *TAG = "Main";
 
-#define TARGET_PRESSURE 20.0
+#define TARGET_OFFSET 7.0         // kPa
+#define TARGET_OFFSET_CHANGE 0.26 // kPa
 
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
@@ -73,14 +74,18 @@ void up_button_clicked(void *arg, void *usr_data) {
   TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
 
   // increase target pressure by set margin
-  tourniquet_configs->target_offset += 3.0; // kPa
+  tourniquet_configs->target_offset += TARGET_OFFSET_CHANGE; // kPa
 }
 
 void down_button_clicked(void *arg, void *usr_data) {
   TourniquetConfig *tourniquet_configs = (TourniquetConfig *)usr_data;
 
   // decrease target pressure by set margin
-  tourniquet_configs->target_offset -= 3.0; // kPa
+  tourniquet_configs->target_offset -= TARGET_OFFSET_CHANGE; // kPa
+}
+
+int convert_kpa_to_mmHg(double kpa_reading) {
+  return (int)(kpa_reading * 7.50062);
 }
 
 void app_main(void) {
@@ -105,10 +110,25 @@ void app_main(void) {
       .ps_queue = &ps_queue,
   };
 
+  // create pressure sensor single data queue.
+  QueueHandle_t fs_queue = xQueueCreate(1, sizeof(double));
+  configASSERT(fs_queue != 0);
+  FsHandle fs_task_args = {
+      .fs_adc_handle = &ps_adc_handle,
+      .fs_cali_handle = &ps_cali_handle,
+      .fs_queue = &fs_queue,
+  };
+
   TaskHandle_t read_ps_handle = NULL;
   xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 5,
               &read_ps_handle);
   configASSERT(read_ps_handle);
+
+  // Task for Fluid Pressure Sensor
+  TaskHandle_t read_fs_handle = NULL;
+  xTaskCreate(read_fs_adc, "Reading Fluid Pressure Sensor", 2048, &fs_task_args,
+              5, &read_fs_handle);
+  configASSERT(read_fs_handle);
 
   // setup LCD screen
   LCDStruct lcd_handles;
@@ -118,10 +138,11 @@ void app_main(void) {
   // setup solenoid and air pump
   setup_pump_and_solenoid();
   double ps_data;
+  double fs_data; // Fluid Sensor
 
   TourniquetConfig tourniquet_configs = {
       .power_status = OFF,
-      .target_offset = 3.0,
+      .target_offset = TARGET_OFFSET,
       .inflation_status = DEFLATED,
       .current_arterial_pressure = 30.0,
   };
@@ -151,19 +172,37 @@ void app_main(void) {
 
   while (true) {
     vTaskDelay(500 / portTICK_PERIOD_MS);
+    char text[44];
+    double target_pressure = 0.0;
 
     if (xQueueReceive(ps_queue, &ps_data, 100)) {
       // received data
-      char text[20];
-      sprintf(text, "Pressure: %.1lf kPa", ps_data);
-      update_pressure(lcd_handles.disp_handle, lcd_handles.set_pressure_label,
+      sprintf(text, "Cuff Pressure: %d mmHg", convert_kpa_to_mmHg(ps_data));
+      update_pressure(lcd_handles.disp_handle, lcd_handles.cuff_pressure_label,
                       text);
       // print_to_lcd(&lcd_handles, text);
       ESP_LOGI(TAG, "Received %lf as ps_data", ps_data);
     }
 
+    if (xQueueReceive(fs_queue, &fs_data, 100)) {
+      // received data
+      sprintf(text, "Arterial Pressure: %d mmHg", convert_kpa_to_mmHg(fs_data));
+      update_pressure(lcd_handles.disp_handle,
+                      lcd_handles.arterial_pressure_label, text);
+      // print_to_lcd(&lcd_handles, text);
+      ESP_LOGI(TAG, "Received %lf as fs_data", fs_data);
+    }
+
+    // print arterial pressure + offset
+    target_pressure = fs_data + tourniquet_configs.target_offset;
+    sprintf(text, "Target Pressure: %d mmHg\nOffset: %d mmHg",
+            convert_kpa_to_mmHg(target_pressure),
+            convert_kpa_to_mmHg(tourniquet_configs.target_offset));
+    update_pressure(lcd_handles.disp_handle, lcd_handles.set_pressure_label,
+                    text);
+
     if (tourniquet_configs.inflation_status == INFLATING) {
-      if (ps_data < tourniquet_configs.current_arterial_pressure) {
+      if (ps_data < target_pressure) {
         continue;
       } else {
         ESP_LOGI(TAG, "Reached target pressure");

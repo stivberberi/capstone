@@ -167,7 +167,7 @@ void setup_lvgl_disp(LCDStruct_Ptr lcd_handles) {
 
   /* Create the third label */
   lv_obj_t *label3 = lv_label_create(screen);
-  lv_label_set_text(label3, "Target Pressure: ");
+  lv_label_set_text(label3, "Target Pressure: \nOffset: ");
   lv_obj_align(label3, LV_ALIGN_BOTTOM_MID, 0, 0);
   // lv_style_set_text_color(&style, lv_color_hex(0x960000));
   lv_obj_add_style(label3, &style, LV_PART_MAIN);
