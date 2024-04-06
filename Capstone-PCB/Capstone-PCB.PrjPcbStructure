@@ -1,0 +1,5 @@
+Record=TopLevelDocument|FileName=1_MCU.SchDoc|SheetNumber=1
+Record=NoMainPathDocument|SourceDocument=1_MCU.SchDoc|FileName=2_Power.SchDoc|SheetNumber=2
+Record=NoMainPathDocument|SourceDocument=1_MCU.SchDoc|FileName=3_PressureSensor.SchDoc|SheetNumber=3
+Record=NoMainPathDocument|SourceDocument=1_MCU.SchDoc|FileName=4_PushButtons.SchDoc|SheetNumber=4
+Record=NoMainPathDocument|SourceDocument=1_MCU.SchDoc|FileName=5_AUX.SchDoc|SheetNumber=5
