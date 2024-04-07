@@ -13,8 +13,13 @@
 
 static char *TAG = "Main";
 
-#define TARGET_OFFSET 7.0         // kPa
-#define TARGET_OFFSET_CHANGE 0.26 // kPa
+#define TARGET_OFFSET 7.0            // kPa (7 = 52.5 mmHg)
+#define TARGET_OFFSET_CHANGE 0.67    // kPa; interval to increase offset
+#define TARGET_OFFSET_THRESHOLD 0.67 // kPa (0.67 = 5 mmHg)
+
+// Used to simulate arterial readings to test pressure tracking
+const double TEST_ARTERIAL_PRESSURES[7] = {2.67,  5.33, 8.0,  10.67,
+                                           13.33, 16.0, 18.67}; // kPa
 
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
@@ -169,11 +174,13 @@ void app_main(void) {
   // **************************************************************************
   // ------------------------END-SETUP-----------------------------------------
   // **************************************************************************
+  char text[44];
+  int target_pressure_idx = 0;
+  double target_pressure = TEST_ARTERIAL_PRESSURES[target_pressure_idx];
+  ESP_LOGI(TAG, "Target pressure: %.1lf", target_pressure);
 
   while (true) {
-    vTaskDelay(500 / portTICK_PERIOD_MS);
-    char text[44];
-    double target_pressure = 0.0;
+    vTaskDelay(100 / portTICK_PERIOD_MS);
 
     if (xQueueReceive(ps_queue, &ps_data, 100)) {
       // received data
@@ -181,7 +188,7 @@ void app_main(void) {
       update_pressure(lcd_handles.disp_handle, lcd_handles.cuff_pressure_label,
                       text);
       // print_to_lcd(&lcd_handles, text);
-      ESP_LOGI(TAG, "Received %lf as ps_data", ps_data);
+      ESP_LOGD(TAG, "Received %lf as ps_data", ps_data);
     }
 
     if (xQueueReceive(fs_queue, &fs_data, 100)) {
@@ -190,24 +197,50 @@ void app_main(void) {
       update_pressure(lcd_handles.disp_handle,
                       lcd_handles.arterial_pressure_label, text);
       // print_to_lcd(&lcd_handles, text);
-      ESP_LOGI(TAG, "Received %lf as fs_data", fs_data);
+      ESP_LOGD(TAG, "Received %lf as fs_data", fs_data);
     }
 
     // print arterial pressure + offset
-    target_pressure = fs_data + tourniquet_configs.target_offset;
+    // target_pressure = fs_data + tourniquet_configs.target_offset;
     sprintf(text, "Target Pressure: %d mmHg\nOffset: %d mmHg",
             convert_kpa_to_mmHg(target_pressure),
             convert_kpa_to_mmHg(tourniquet_configs.target_offset));
     update_pressure(lcd_handles.disp_handle, lcd_handles.set_pressure_label,
                     text);
 
-    if (tourniquet_configs.inflation_status == INFLATING) {
-      if (ps_data < target_pressure) {
-        continue;
+    /**
+     Demo code: prints out the taret and current pressure readings so we can
+     plot it to compare to other forms of PID controller*/
+    ESP_LOGI(TAG, "Cuff Pressure: %d mmHg", convert_kpa_to_mmHg(ps_data));
+    ESP_LOGI(TAG, "Target Pressure: %d mmHg",
+             convert_kpa_to_mmHg(target_pressure));
+
+    if (tourniquet_configs.inflation_status == INFLATING ||
+        tourniquet_configs.inflation_status == INFLATED) {
+      // continue to check this even if we are inflated in case we go outside
+      // the pressure thresholds
+      if (ps_data < target_pressure - TARGET_OFFSET_THRESHOLD) {
+        // run pump and solenoid to reach target pressure
+        start_pump();
+        start_solenoid();
+      } else if (ps_data > target_pressure + TARGET_OFFSET_THRESHOLD) {
+        // above the threshold, release solenoid to get back
+        stop_pump();
+        stop_solenoid();
       } else {
         ESP_LOGI(TAG, "Reached target pressure");
         tourniquet_configs.inflation_status = INFLATED;
         stop_pump();
+        start_solenoid();
+        // For simulation; delay 2 seconds then move to next value
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        if (target_pressure_idx == 7) {
+          continue;
+        } else {
+          target_pressure_idx++;
+          target_pressure = TEST_ARTERIAL_PRESSURES[target_pressure_idx];
+          ESP_LOGI(TAG, "Target pressure: %.1lf", target_pressure);
+        }
       }
     }
   }

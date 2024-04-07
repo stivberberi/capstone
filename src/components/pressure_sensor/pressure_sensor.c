@@ -125,6 +125,8 @@ void read_ps_adc(void *ps_args) {
     // add to moving average queue
     pressure_values[index_moving_average] = converted_pressure;
     pressure_avg = findAvg(pressure_values, MOVING_AVERAGE_WINDOW_SIZE);
+    index_moving_average =
+        (index_moving_average + 1) % MOVING_AVERAGE_WINDOW_SIZE;
 
     // pass converted pressure
     xQueueOverwrite(*args->ps_queue, &pressure_avg);
@@ -168,7 +170,7 @@ void read_fs_adc(void *fs_args) {
       ESP_LOGI(TAG, "Uncalibrated voltage: %d voltage", voltage);
     }
     double converted_pressure = convert_voltage_to_fluid(voltage);
-    ESP_LOGI(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
+    ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
 
     // Setting up moving average
     pressure_values[index_read] = converted_pressure;
@@ -187,9 +189,9 @@ void read_fs_adc(void *fs_args) {
 
     // run once every 100 ms.
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    ESP_LOGI(TAG, "Raw voltage: %d", voltage);
+    ESP_LOGD(TAG, "Raw voltage: %d", voltage);
     // ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
-    ESP_LOGI(TAG, "Average Pressure: %lf", pressure_avg);
+    ESP_LOGD(TAG, "Average Pressure: %lf", pressure_avg);
   }
 }
 
