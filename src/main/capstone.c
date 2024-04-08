@@ -18,8 +18,7 @@ static char *TAG = "Main";
 #define TARGET_OFFSET_THRESHOLD 0.67 // kPa (0.67 = 5 mmHg)
 
 // Used to simulate arterial readings to test pressure tracking
-const double TEST_ARTERIAL_PRESSURES[7] = {2.67,  5.33, 8.0,  10.67,
-                                           13.33, 16.0, 18.67}; // kPa
+const double TEST_ARTERIAL_PRESSURES[5] = {0.80, 1.33, 2.0, 2.67, 3.33}; // kPa
 
 // Self-Regulating Tourniquet Modes
 typedef struct _mode {
@@ -177,7 +176,6 @@ void app_main(void) {
   char text[44];
   int target_pressure_idx = 0;
   double target_pressure = TEST_ARTERIAL_PRESSURES[target_pressure_idx];
-  ESP_LOGI(TAG, "Target pressure: %.1lf", target_pressure);
 
   while (true) {
     vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -232,14 +230,14 @@ void app_main(void) {
         tourniquet_configs.inflation_status = INFLATED;
         stop_pump();
         start_solenoid();
-        // For simulation; delay 2 seconds then move to next value
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-        if (target_pressure_idx == 7) {
+        // For simulation; wait two seconds before moving to the next target
+        // pressure but don't stop task execution so we keep sending logs
+
+        if (target_pressure_idx == 5) {
           continue;
         } else {
           target_pressure_idx++;
           target_pressure = TEST_ARTERIAL_PRESSURES[target_pressure_idx];
-          ESP_LOGI(TAG, "Target pressure: %.1lf", target_pressure);
         }
       }
     }

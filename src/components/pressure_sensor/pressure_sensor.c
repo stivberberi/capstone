@@ -10,7 +10,7 @@
 #include "hal/adc_types.h"
 #include "portmacro.h"
 
-#define MOVING_AVERAGE_WINDOW_SIZE 10
+#define MOVING_AVERAGE_WINDOW_SIZE 30
 
 const static char *TAG = "Pressure_Sensor"; // used as the tag for ESP_LOG's
 
