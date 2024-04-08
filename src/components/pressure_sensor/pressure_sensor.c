@@ -65,8 +65,11 @@ double convert_voltage_to_fluid(int voltage) {
   // Rate Range: 0~1.2Mpa
   // https://www.seeedstudio.com/Water-Pressure-Sensor-G1-4-1-2MPa-p-2887.html
   double offset = 0;
+  //voltage_in * Max pressure / (Span Voltage * Gain)
   // P = 4/3 * (Vout/Vcc - 0.1)
-  double pressure = ((1.33333333) * (voltage / 5.0 - 0.1)) + offset;
+  //double pressure = ((1.33333333) * (voltage / 5.0 - 0.1)) + offset;
+  //double pressure = (4.5/10)*(voltage / 5.0)
+  double pressure = (voltage-0.5) * 68.9476 / (4.5) + offset;
   return pressure; // This may be in MPa, so multiply by 1000 to get kPa
 }
 
@@ -117,10 +120,10 @@ void read_ps_adc(void *ps_args) {
       // https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32/api-reference/peripherals/adc.html
       // Definitely might be wrong / needs updating / testing however.
       voltage = adc_raw_reading * 2450 / 4095;
-      ESP_LOGD(TAG, "Uncalibrated voltage: %d voltage", voltage);
+      //ESP_LOGD(TAG, "Uncalibrated voltage: %d voltage", voltage);
     }
     double converted_pressure = convert_voltage_to_pressure(voltage);
-    ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
+    //ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
 
     // add to moving average queue
     pressure_values[index_moving_average] = converted_pressure;
@@ -133,8 +136,8 @@ void read_ps_adc(void *ps_args) {
 
     // run once every 100 ms.
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    ESP_LOGD(TAG, "Raw voltage: %d", voltage);
-    ESP_LOGD(TAG, "Converted Pressure: %lf", converted_pressure);
+    //ESP_LOGD(TAG, "Raw voltage: %d", voltage);
+    //ESP_LOGD(TAG, "Converted Pressure: %lf", converted_pressure);
   }
 }
 
@@ -170,7 +173,7 @@ void read_fs_adc(void *fs_args) {
       ESP_LOGI(TAG, "Uncalibrated voltage: %d voltage", voltage);
     }
     double converted_pressure = convert_voltage_to_fluid(voltage);
-    ESP_LOGD(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
+    //ESP_LOGI(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
 
     // Setting up moving average
     pressure_values[index_read] = converted_pressure;
@@ -190,7 +193,7 @@ void read_fs_adc(void *fs_args) {
     // run once every 100 ms.
     vTaskDelay(100 / portTICK_PERIOD_MS);
     ESP_LOGD(TAG, "Raw voltage: %d", voltage);
-    // ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
+    ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
     ESP_LOGD(TAG, "Average Pressure: %lf", pressure_avg);
   }
 }
