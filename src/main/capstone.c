@@ -66,6 +66,9 @@ static void start_button_clicked(void *arg, void *usr_data) {
     tourniquet_configs->inflation_status = INFLATING;
     start_solenoid();
     start_pump();
+  } else if (tourniquet_configs->inflation_status == PAUSED) {
+    // unpause it
+    tourniquet_configs->inflation_status = INFLATING;
   } else {
     // Inflated or currently inflating; either way set it to hold pressure
     tourniquet_configs->inflation_status = PAUSED;
@@ -232,7 +235,6 @@ void app_main(void) {
         start_solenoid();
         // For simulation; wait two seconds before moving to the next target
         // pressure but don't stop task execution so we keep sending logs
-
         if (target_pressure_idx == 5) {
           continue;
         } else {
