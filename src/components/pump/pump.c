@@ -29,22 +29,22 @@ void setup_pump_and_solenoid() {
 
 /*-----Pump Control-----*/
 void start_pump() {
-  ESP_LOGI(TAG, "Starting pump...");
+  ESP_LOGD(TAG, "Starting pump...");
   gpio_set_level(RELAY_GPIO, 1);
 }
 
 void stop_pump() {
-  ESP_LOGI(TAG, "Stopping pump...");
+  ESP_LOGD(TAG, "Stopping pump...");
   gpio_set_level(RELAY_GPIO, 0);
 }
 
 /*-----Solenoid Control-----*/
 void start_solenoid() {
-  ESP_LOGI(TAG, "Starting solenoid...");
+  ESP_LOGD(TAG, "Starting solenoid...");
   gpio_set_level(SOLENOID_GPIO, 1);
 }
 
 void stop_solenoid() {
-  ESP_LOGI(TAG, "Stopping solenoid...");
+  ESP_LOGD(TAG, "Stopping solenoid...");
   gpio_set_level(SOLENOID_GPIO, 0);
 }
