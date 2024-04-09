@@ -241,6 +241,7 @@ void app_main(void) {
           target_pressure_idx++;
           target_pressure = TEST_ARTERIAL_PRESSURES[target_pressure_idx];
         }
+        continue;
       }
     }
   }
