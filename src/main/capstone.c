@@ -120,14 +120,14 @@ void app_main(void) {
   };
 
   TaskHandle_t read_ps_handle = NULL;
-  xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 5,
+  xTaskCreate(read_ps_adc, "Reading Pressure Sensor", 2048, &ps_task_args, 8,
               &read_ps_handle);
   configASSERT(read_ps_handle);
 
   // Task for Fluid Pressure Sensor
   TaskHandle_t read_fs_handle = NULL;
   xTaskCreate(read_fs_adc, "Reading Fluid Pressure Sensor", 2048, &fs_task_args,
-              5, &read_fs_handle);
+              8, &read_fs_handle);
   configASSERT(read_fs_handle);
 
   // setup LCD screen
@@ -195,6 +195,7 @@ void app_main(void) {
 
     // print arterial pressure + offset
     target_pressure = fs_data + tourniquet_configs.target_offset;
+    
     sprintf(text, "Target Pressure: %d mmHg\nOffset: %d mmHg",
             convert_kpa_to_mmHg(target_pressure),
             convert_kpa_to_mmHg(tourniquet_configs.target_offset));

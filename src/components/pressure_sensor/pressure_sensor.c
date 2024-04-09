@@ -60,14 +60,15 @@ double convert_voltage_to_pressure(int voltage_mv) {
   return pressure;
 }
 
-double convert_voltage_to_fluid(int voltage) {
-  // This is for the fluid pressure sensor; Vout: 0.5-4.5V; Working Pressure
-  // Rate Range: 0~1.2Mpa
+double convert_voltage_to_fluid(int voltage_mv) {
+  double voltage = voltage_mv / 1000; // now in volts
+  // This is for the fluid pressure sensor; Vout: 0-5V; Working Pressure
+  // Rate Range: 0-10 PSI
   // https://www.seeedstudio.com/Water-Pressure-Sensor-G1-4-1-2MPa-p-2887.html
+  //double pressure = ((1.33333333) * (voltage / 5.0 - 0.1)) + offset;
   double offset = 0;
-  // P = 4/3 * (Vout/Vcc - 0.1)
-  double pressure = ((1.33333333) * (voltage / 5.0 - 0.1)) + offset;
-  return pressure; // This may be in MPa, so multiply by 1000 to get kPa
+  double pressure = 68.9476*(voltage)/(5.0) + offset; // this is the linear equation for this new sensor
+  return pressure;
 }
 
 int findMax(double arr[], int n) {
@@ -132,7 +133,7 @@ void read_ps_adc(void *ps_args) {
     // run once every 100 ms.
     vTaskDelay(100 / portTICK_PERIOD_MS);
     ESP_LOGD(TAG, "Raw voltage: %d", voltage);
-    ESP_LOGD(TAG, "Converted Pressure: %lf", converted_pressure);
+    ESP_LOGI(TAG, "Converted AIR Pressure: %lf", converted_pressure);
   }
 }
 
@@ -149,7 +150,7 @@ void read_fs_adc(void *fs_args) {
   for (;;) {
     FsHandle_Ptr args = (FsHandle_Ptr)fs_args;
     int adc_raw_reading;
-    int voltage; // voltage reading
+    int voltage; // voltage reading in mV
 
     ESP_ERROR_CHECK(adc_oneshot_read(
         *args->fs_adc_handle, PRESSURE_SENSOR_ADC_CHANNEL, &adc_raw_reading));
@@ -165,10 +166,10 @@ void read_fs_adc(void *fs_args) {
       // https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32/api-reference/peripherals/adc.html
       // Definitely might be wrong / needs updating / testing however.
       voltage = adc_raw_reading * 2450 / 4095;
-      ESP_LOGI(TAG, "Uncalibrated voltage: %d voltage", voltage);
+      //ESP_LOGI(TAG, "Uncalibrated voltage: %d voltage", voltage);
     }
     double converted_pressure = convert_voltage_to_fluid(voltage);
-    ESP_LOGI(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
+    //ESP_LOGI(TAG, "Converted pressure: %lf kPa\n", converted_pressure);
 
     // Setting up moving average
     pressure_values[index_read] = converted_pressure;
@@ -188,8 +189,8 @@ void read_fs_adc(void *fs_args) {
     // run once every 100 ms.
     vTaskDelay(100 / portTICK_PERIOD_MS);
     ESP_LOGI(TAG, "Raw voltage: %d", voltage);
-    // ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
-    ESP_LOGI(TAG, "Average Pressure: %lf", pressure_avg);
+     ESP_LOGI(TAG, "Converted Pressure: %lf", converted_pressure);
+    //ESP_LOGI(TAG, "Average Pressure: %lf", pressure_avg);
   }
 }
 
